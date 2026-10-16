@@ -10,7 +10,7 @@ A lightweight, zero-dependency HTML5 video player for PC designed to apply nativ
 
 ***Note:*** this is not intended in any way for mobile devices, but you're more than welcome to try. If you do--go landscape mode.
 <h3 align="center">
-  <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">Try SSVidPlayer in your browser right now, no download required! Click here.</a>
+  <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">!!~Try SSVidPlayer in your browser right now, no download required! Click here.~!!</a>
 </h3>
 <br>
 <p align="center"><img width="900" alt="VidPlayingScreenie" src="https://github.com/user-attachments/assets/1e4a05ae-0547-41a6-a214-6fb68b07b5a5" /></p>
