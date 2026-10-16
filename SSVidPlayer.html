@@ -1257,8 +1257,8 @@
                 // Prevent massive jumps if the tab was backgrounded or video just unpaused
                 if (dt > 1000) dt = 16.66;
                 
-                // tau = 200ms time constant. 1 - exp(-16.66 / 200) equals ~0.08 (matches original 60Hz behavior)
-                const tau = 200; 
+                // tau (time constant in milliseconds). Increase this value to slow down the glow shift (e.g., 800-1200ms).
+                const tau = 600; 
                 let alpha = 1 - Math.exp(-dt / tau);
                 
                 ambientCtx.globalAlpha = isFirstFrame ? 1.0 : alpha;
