@@ -1,5 +1,6 @@
-<p align="center"><img width="900" alt="Iconbanner" src="https://github.com/user-attachments/assets/577609d7-7437-4fb1-9a49-f26d85aa19b6" /></p>
+<p align="center"><img width="900" alt="Iconbanner" src="https://github.com/user-attachments/assets/c18fe770-4af3-4f74-ba6f-8a68478caa58" /></p>
 <br>
+
 
 # SSVidPlayer (RTX Super Sampling Video Player)
 <!--
