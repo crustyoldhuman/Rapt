@@ -28,6 +28,14 @@ By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the 
 All the other bells and whistles are just cherries on top of that core purpose.
 <br><br>
 
+## Requirements
+
+* A PC with an RTX graphics card that supports super sampling (I have not been able to test this on an AMD gpu, if you can, please let me know!)
+* A video file to play
+* A screen to play it on
+* A browser that supports HTML5
+* A brain, but does not need to be particularly good
+
 ## Other Features
 
 * **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
