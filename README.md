@@ -8,7 +8,7 @@
 -->
 A lightweight, zero-dependency HTML5 video player for PC designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files, all while remaining entirely local and privacy-respecting.
 
-***Note:*** this is not intended in any way for mobile devices, but you're more than welcome to try. If you do--go landscape mode.
+***Note:*** this is not intended in any way for mobile devices, but you're more than welcome to try.
 <h3 align="center">
   <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">!!~Try SSVidPlayer in your browser right now, no download required! Click here.~!!</a>
 </h3>
