@@ -922,14 +922,13 @@
 
                     if (srtFile) loadSrt(srtFile);
 
+                    if (!audioCtx) initAudio();
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume().catch(() => {});
+                    }
+
                     videoPlayer.load(); 
                     audioPlayer.load(); 
-
-                    // THE FATAL CHROMIUM BUG FIX:
-                    // Chromium permanently ignores the Web Audio API if createMediaElementSource is called 
-                    // AFTER the media starts playing. We MUST initialize it right here while the audio is completely paused.
-                    // Since this now targets the hidden audioPlayer, VSR on the videoPlayer stays perfectly intact.
-                    if (!audioCtx) initAudio();
                 } else if (srtFile && videoPlayer.src) {
                     loadSrt(srtFile);
                 } else {
@@ -1138,15 +1137,25 @@
 
                 manageAmbientState();
 
-                // Try to autoplay. If blocked by browser, wait for user.
-                const playPromise = videoPlayer.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        audioPlayer.play().catch(e => console.log("Audio autoplay blocked"));
-                    }).catch(error => {
-                        console.log("Autoplay blocked. User must click play.", error);
-                    });
-                }
+                // Try to autoplay both video and audio. If audio is blocked by Firefox, pause video and show overlay.
+                const startPlayback = async () => {
+                    try {
+                        if (!audioCtx) initAudio();
+                        if (audioCtx.state === 'suspended') {
+                            await audioCtx.resume();
+                        }
+                        await videoPlayer.play();
+                        await audioPlayer.play();
+                    } catch (error) {
+                        videoPlayer.pause();
+                        audioPlayer.pause();
+                        playOverlay.classList.add('ready');
+                        playOverlay.classList.add('visible');
+                        document.getElementById('iconPlay').style.display = 'block';
+                        document.getElementById('iconPause').style.display = 'none';
+                    }
+                };
+                startPlayback();
             });
 
             function initAudio() {
@@ -1319,13 +1328,14 @@
                 document.getElementById('iconPlay').style.display = 'none';
                 document.getElementById('iconPause').style.display = 'block';
                 
-                // Failsafe: Ensure audio turns on when video does
-                if (audioPlayer.paused) {
-                    audioPlayer.play().catch(e => console.log("Awaiting user gesture for audio"));
-                }
-                
                 if (!audioCtx) initAudio();
-                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume().catch(() => {});
+                }
+                if (audioPlayer.paused) {
+                    audioPlayer.currentTime = videoPlayer.currentTime;
+                    audioPlayer.play().catch(() => {});
+                }
                 
                 manageAmbientState(); 
             });
@@ -1417,13 +1427,10 @@
                 }
                 timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
                 
-                // Anti-Drift and Anti-Silence Engine
-                if (!videoPlayer.paused) {
+                // Anti-Drift Engine
+                if (!videoPlayer.paused && !audioPlayer.paused) {
                     if (Math.abs(videoPlayer.currentTime - audioPlayer.currentTime) > 0.15) {
                         audioPlayer.currentTime = videoPlayer.currentTime;
-                    }
-                    if (audioPlayer.paused) {
-                        audioPlayer.play().catch(e => {});
                     }
                 }
             });
@@ -1443,9 +1450,12 @@
                 timeDisplay.innerText = `${formatTime(seekTime)} / ${formatTime(videoPlayer.duration)}`;
             });
 
-            seekSlider.addEventListener('wheel', (e) => {
+            bottomControlBar.addEventListener('wheel', (e) => {
+                // Ignore if hovering over the volume controls to prevent conflicts
+                if (e.target.closest('#volumeSlider') || e.target.closest('.slider-container')) return;
+                
                 e.preventDefault();
-                if (!videoPlayer.duration) return;
+                if (!videoPlayer.duration || seekSlider.disabled) return;
 
                 const seekAmount = e.deltaY < 0 ? 5 : -5;
                 let newTime = videoPlayer.currentTime + seekAmount;
