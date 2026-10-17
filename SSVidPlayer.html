@@ -720,6 +720,11 @@
             volumeSlider.disabled = true;
             seekSlider.value = 0;
             timeDisplay.innerText = "0:00 / 0:00";
+
+            const isChromium = !!window.chrome || navigator.userAgent.toLowerCase().includes('chrome');
+            if (isChromium) {
+                volumeSlider.max = "1";
+            }
         });
 
             // --- SUBTITLE ENGINE REWRITE ---
@@ -1621,8 +1626,8 @@
                 this.dispatchEvent(new Event('input'));
             });
 
-            // Allow scrolling anywhere over the video player to adjust the volume
-            document.addEventListener('wheel', function(e) {
+            // Allow scrolling anywhere in the viewport to adjust the volume
+            window.addEventListener('wheel', function(e) {
                 // Ignore if the mouse is hovering over the top or bottom UI panels
                 if (controlBar.contains(e.target) || bottomControlBar.contains(e.target) || volumeSlider.disabled) return;
                 
