@@ -38,8 +38,10 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 ## Other Features
 
-* **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
-* **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and AI upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time to fix both of these problems.
+- **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
+  
+- **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and AI upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time to fix both of these problems.
+  
 - **Playlist Manager:** Load multiple videos and save/load your playlists for continuous playback. Drag-and-drop your media to resort your list. Saving/loading only available on Windows app. 
 
 - **250% Audio Amplification:** Bypasses standard browser volume limits using the Web Audio API `GainNode`, allowing you to boost quiet audio tracks up to 2.5x (250%) their native volume.
@@ -53,15 +55,18 @@ All the other bells and whistles are just cherries on top of that core purpose.
   * Real-time **Sub-Sync** offset (click or scroll the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
   * Draggable subtitles (click and move text anywhere on the screen).
   * Adjustable subtitle font size.
-* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
-* **Broad Media Support:** Plays `.mp4`, `.mkv` (if the browser supports the codec), and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. 
-* **Other Bells & Whistles:**
+
+- **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
+
+- **Broad Media Support:** Plays `.mp4`, `.mkv` (if the browser supports the codec), and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files.
+
+- **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads.
+
+- **Other Bells & Whistles:**
   * Scroll-wheel support for volume, size, and cropping values
   * Loop toggling for background media
-  * Smart mute memory (remembers your exact volume percentage when unmuting)
   * Auto-hiding, distraction-free UI
-* **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads.
-* 
+
 ## How to Use
 
 **Windows App Version (Recommended):**
@@ -75,7 +80,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. Drag and drop an `.srt` file to load subtitles (embedded subtitles require the Windows App version).
 
-** ***NOTE*** ** the file "SSVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of SSVideoPlayer. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html to your browser so you can always be using the most recent version of SSVidPlayer. This is just meant as an alternative to downloading the standalone HTML file on the releases page. 
+** ***NOTE*** ** the file "SSVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of SSVideoPlayer. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html to your browser so you can always have easy access anywhere on any computer to a video player that supports Super Sampling.
 
 ## Shortcuts & Controls
 
