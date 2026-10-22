@@ -1,8 +1,4 @@
 ﻿using Microsoft.UI.Xaml;
-using Microsoft.Windows.AppLifecycle;
-using Windows.ApplicationModel.Activation;
-using Windows.Storage;
-using System.Linq;
 
 namespace SSVidPlayer
 {
@@ -19,16 +15,6 @@ namespace SSVidPlayer
 		{
 			m_window = new MainWindow();
 			m_window.Activate();
-
-			// Check if launched via double-clicking an associated file
-			var appArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
-			if (appArgs.Kind == ExtendedActivationKind.File &&
-				appArgs.Data is IFileActivatedEventArgs fileArgs &&
-				fileArgs.Files.Count > 0 &&
-				fileArgs.Files[0] is IStorageFile storageFile)
-			{
-				((MainWindow)m_window).LoadInitialFile(storageFile.Path);
-			}
 		}
 	}
 }
