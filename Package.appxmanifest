@@ -10,14 +10,14 @@
 
   <Identity
     Name="d12293f0-a8f6-415d-a918-28adaea0b4e7"
-    Publisher="CN=kevin"
-    Version="1.0.0.0" />
+    Publisher="CN=crustyoldhuman"
+    Version="1.2.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>SSVidPlayer</DisplayName>
-    <PublisherDisplayName>kevin</PublisherDisplayName>
+    <PublisherDisplayName>crustyoldhuman</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 

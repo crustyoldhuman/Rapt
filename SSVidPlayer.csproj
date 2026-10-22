@@ -1,7 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+	<PropertyGroup>
+		<Version>1.2.0</Version>
+		<FileVersion>1.2.0.0</FileVersion>
+		<AssemblyVersion>1.2.0.0</AssemblyVersion>
+		<Company>crustyoldhuman</Company>
+		<Authors>crustyoldhuman</Authors>
+		<PublisherName>CN=crustyoldhuman</PublisherName>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>SSVidPlayer</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -29,9 +35,10 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <Manifest Include="$(ApplicationManifest)" />
-  </ItemGroup>
+	<ItemGroup>
+		<Manifest Include="$(ApplicationManifest)" />
+		<AppxManifest Include="Package.appxmanifest" Condition="'$(WindowsPackageType)' != 'None'" />
+	</ItemGroup>
 
   <!--
     Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
