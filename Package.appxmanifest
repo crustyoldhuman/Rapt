@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
+  IgnorableNamespaces="uap rescap systemai">
+
+  <Identity
+    Name="d12293f0-a8f6-415d-a918-28adaea0b4e7"
+    Publisher="CN=kevin"
+    Version="1.0.0.0" />
+
+  <mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+
+  <Properties>
+    <DisplayName>SSVidPlayer</DisplayName>
+    <PublisherDisplayName>kevin</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26226.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26226.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="SSVidPlayer"
+        Description="SSVidPlayer"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
+        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      </uap:VisualElements>
+		<Extensions>
+			<uap:Extension Category="windows.fileTypeAssociation">
+				<uap:FileTypeAssociation Name="mediafiles">
+					<uap:DisplayName>SSVidPlayer Media</uap:DisplayName>
+					<uap:SupportedFileTypes>
+						<uap:FileType>.mp4</uap:FileType>
+						<uap:FileType>.mkv</uap:FileType>
+						<uap:FileType>.srt</uap:FileType>
+					</uap:SupportedFileTypes>
+				</uap:FileTypeAssociation>
+			</uap:Extension>
+		</Extensions>
+    </Application>
+  </Applications>
+
+	<Capabilities>
+		<Capability Name="internetClient" />
+		<rescap:Capability Name="runFullTrust" />
+		<systemai:Capability Name="systemAIModels"/>
+	</Capabilities>
+</Package>

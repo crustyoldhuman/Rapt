@@ -1,0 +1,22 @@
+# Visual Studio temporary files, build outputs, and caches
+.vs/
+bin/
+obj/
+*.user
+
+# PowerShell scripts
+*.ps1
+
+# Inno Setup files and associated installer images
+*.iss
+*.bmp
+*.jpg
+SetupBackground.png
+SideImage.png
+TopImage.png
+
+# Standard Inno Setup output directory
+Output/
+AppPackages/
+BuildOutputs/
+BundleArtifacts/

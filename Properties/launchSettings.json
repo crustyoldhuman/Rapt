@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SSVidPlayer (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SSVidPlayer (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
