@@ -5,7 +5,7 @@
 		<AssemblyVersion>1.2.0.0</AssemblyVersion>
 		<Company>crustyoldhuman</Company>
 		<Authors>crustyoldhuman</Authors>
-		<PublisherName>CN=crustyoldhuman</PublisherName>
+		<PublisherName>CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493</PublisherName>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>

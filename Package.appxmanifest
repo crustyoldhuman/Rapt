@@ -9,8 +9,8 @@
   IgnorableNamespaces="uap rescap systemai">
 
   <Identity
-    Name="d12293f0-a8f6-415d-a918-28adaea0b4e7"
-    Publisher="CN=crustyoldhuman"
+    Name="crustyoldhuman.SSVidPlayer"
+    Publisher="CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493"
     Version="1.2.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
