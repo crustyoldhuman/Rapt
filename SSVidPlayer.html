@@ -683,7 +683,7 @@
 
         <div class="controls hidden" id="controlBar">
             <div class="top-row">
-                <label for="videoFileInput" class="custom-file-label">Load Media...</label>
+                <label for="videoFileInput" class="custom-file-label">Load Media</label>
                 <input type="file" id="videoFileInput" accept="video/*,audio/*,.srt" multiple style="display: none;">
 
                 <div class="ui-group" id="subtitleContainer">
@@ -1759,18 +1759,22 @@
             let playlistLockTimer = null;
 
             playlistHandle.addEventListener('click', () => {
-            playlistPanel.classList.toggle('open');
-            playlistHandle.classList.remove('stay-visible');
+                playlistPanel.classList.toggle('open');
+                playlistHandle.classList.remove('stay-visible');
+                playlistPanel.classList.remove('bounce-hint');
+                playlistHandle.classList.remove('bounce-hint');
             });
 
             window.addEventListener('mousemove', (e) => {
-            if (e.clientX <= window.innerWidth * 0.20) {
-            playlistHandle.classList.add('show-indicator');
-            if (e.clientX <= window.innerWidth * 0.03) {
-            playlistPanel.classList.add('open');
-            playlistHandle.classList.remove('stay-visible');
-            }
-            } else {
+                if (e.clientX <= window.innerWidth * 0.20) {
+                    playlistHandle.classList.add('show-indicator');
+                    if (e.clientX <= window.innerWidth * 0.03) {
+                        playlistPanel.classList.add('open');
+                        playlistHandle.classList.remove('stay-visible');
+                        playlistPanel.classList.remove('bounce-hint');
+                        playlistHandle.classList.remove('bounce-hint');
+                    }
+                } else {
             playlistHandle.classList.remove('show-indicator');
             if (!isPlaylistLockedOpen) {
             playlistPanel.classList.remove('open');

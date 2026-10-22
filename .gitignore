@@ -20,3 +20,6 @@ Output/
 AppPackages/
 BuildOutputs/
 BundleArtifacts/
+
+# Large binaries excluded due to GitHub 100MB limit
+ffmpeg.exe
