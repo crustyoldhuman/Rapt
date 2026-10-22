@@ -52,6 +52,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
   * **Native Demuxing (Windows App):** Automatically extracts embedded subtitles directly from `.mkv` and `.mp4` containers.
   * Drag-and-drop `.srt` support with on-the-fly `.vtt` conversion.
+  * Dual-load support: Load a video and it's partner `.srt` file at the same time, even when adding multiple videos to the playlist at once. Just make sure the `.srt` and the video file share the same filename. 
   * Real-time **Sub-Sync** offset (click or scroll the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
   * Draggable subtitles (click and move text anywhere on the screen).
   * Adjustable subtitle font size.
