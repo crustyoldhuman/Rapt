@@ -8,6 +8,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.Web.WebView2.Core;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
 
 namespace SSVidPlayer
@@ -69,12 +70,7 @@ namespace SSVidPlayer
 			// REQUIRED FOR NVIDIA VSR: DWM rejects Hardware Overlays if the WebView2 surface has potential transparency.
 			PlayerWebView.DefaultBackgroundColor = Colors.Black;
 
-			// Fix for internal HTML5 Drag & Drop reordering showing the blocked "no" symbol in WinUI 3
-			PlayerWebView.AllowDrop = true;
-			PlayerWebView.DragOver += (s, e) =>
-			{
-				e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move | Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
-			};
+			// Let WebView2 handle file drops and pointer events natively
 
 			var coreWv = PlayerWebView.CoreWebView2;
 			coreWv.Settings.AreDefaultContextMenusEnabled = false;

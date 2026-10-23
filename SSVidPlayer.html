@@ -429,6 +429,9 @@
                 text-align: center;
                 border-bottom: 1px solid #000000;
                 font-size: 16px;
+                background-color: #141414;
+                position: relative;
+                z-index: 20;
             }
             .playlist-list {
                 flex-grow: 1;
@@ -467,6 +470,18 @@
             }
             .playlist-item:hover {
                 border-color: #23A620;
+            }
+            .playlist-list.is-dragging .playlist-item:hover {
+                border-color: #000000;
+            }
+            .playlist-list.is-dragging .playlist-item.selected:hover {
+                border-color: #23A620;
+            }
+            :root {
+                view-transition-name: none;
+            }
+            ::view-transition {
+                clip-path: inset(var(--clip-top, 0px) var(--clip-right, 0px) var(--clip-bottom, 0px) var(--clip-left, 0px));
             }
             .playlist-item.dragging {
                 opacity: 0.5;
@@ -529,6 +544,9 @@
                 flex-direction: row;
                 align-items: center;
                 gap: 8px;
+                background-color: #141414;
+                position: relative;
+                z-index: 20;
             }
             .playlist-controls button {
                 flex: 1;
@@ -780,9 +798,15 @@
         <div id="subToast" class="toast hidden">Subtitles loaded</div>
 
         <div class="bottom-controls hidden" id="bottomControlBar">
+            <button id="btnPrev" style="width: 32px; height: 32px; padding: 0; display: none; align-items: center; justify-content: center;" title="Previous">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+            </button>
             <button id="btnPlayPause" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Play/Pause">
                 <svg id="iconPlay" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 <svg id="iconPause" style="display: none;" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            </button>
+            <button id="btnNext" style="width: 32px; height: 32px; padding: 0; display: none; align-items: center; justify-content: center;" title="Next">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
             </button>
             <button id="btnLoop" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Toggle Repeat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" /></svg>
@@ -907,7 +931,9 @@
             const subStyle = document.createElement('style');
             document.head.appendChild(subStyle);
             const bottomControlBar = document.getElementById('bottomControlBar');
+            const btnPrev = document.getElementById('btnPrev');
             const btnPlayPause = document.getElementById('btnPlayPause');
+            const btnNext = document.getElementById('btnNext');
             const btnLoop = document.getElementById('btnLoop');
             const seekSlider = document.getElementById('seekSlider');
             const timeDisplay = document.getElementById('timeDisplay');
@@ -932,6 +958,23 @@
 
             let isLinkedTB = true;
             let isLinkedLR = true;
+            let isFitToPageEnabled = false;
+
+            function setFitToPage(enabled, applyScale = true) {
+                isFitToPageEnabled = enabled;
+                localStorage.setItem('ssvid_fitToPage', enabled);
+                if (enabled) {
+                    btnFit.style.backgroundColor = '#23A620';
+                    btnFit.style.color = '#142229';
+                    if (applyScale && nativeWidth && nativeHeight) {
+                        sizeSlider.value = currentFitScale;
+                        updateVideoSize(currentFitScale);
+                    }
+                } else {
+                    btnFit.style.backgroundColor = '#142229';
+                    btnFit.style.color = '#23A620';
+                }
+            }
 
             // --- CUSTOM DRAGGABLE SUBTITLE LOGIC ---
             let isDraggingSub = false;
@@ -1055,10 +1098,15 @@
 
             const savedAmbient = localStorage.getItem('ssvid_ambientEnabled');
             const savedGlow = localStorage.getItem('ssvid_glowIntensity');
+            const savedFit = localStorage.getItem('ssvid_fitToPage');
 
             ambientToggle.checked = savedAmbient === 'true';
             isAmbientEnabled = ambientToggle.checked;
             glowIntensityGroup.style.display = isAmbientEnabled ? 'block' : 'none';
+
+            if (savedFit === 'true') {
+                setFitToPage(true, false);
+            }
 
             if (savedGlow !== null) {
             glowSlider.value = savedGlow;
@@ -1535,7 +1583,12 @@
             updateSliderMax();
 
             const dpr = window.devicePixelRatio || 1;
-            const targetScale = (window.innerHeight * 0.70 * dpr) / nativeHeight;
+            let targetScale = (window.innerHeight * 0.70 * dpr) / nativeHeight;
+            
+            if (isFitToPageEnabled) {
+                targetScale = currentFitScale;
+            }
+            
             const clampedScale = Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
 
             sizeSlider.value = clampedScale;
@@ -1883,6 +1936,11 @@
 
             function renderPlaylist() {
             btnPlaylistClear.disabled = playlistFiles.length === 0;
+            
+            const showNav = playlistFiles.length > 1;
+            btnPrev.style.display = showNav ? 'inline-flex' : 'none';
+            btnNext.style.display = showNav ? 'inline-flex' : 'none';
+
             playlistList.innerHTML = '';
             playlistFiles.forEach((file, index) => {
             const li = document.createElement('li');
@@ -1892,8 +1950,6 @@
 
             if (!file.playlistId) file.playlistId = 'ptm-' + Math.random().toString(36).substring(2, 11);
             li.style.viewTransitionName = file.playlistId;
-
-            li.draggable = true;
 
             const textSpan = document.createElement('span');
             textSpan.className = 'playlist-item-text';
@@ -1911,50 +1967,84 @@
             li.appendChild(srtSpan);
             }
 
-            li.addEventListener('dragstart', (e) => {
-            draggedItemIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-            setTimeout(() => li.classList.add('dragging'), 0);
-            });
-
-            li.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-
-            Array.from(playlistList.children).forEach(item => {
-            item.classList.remove('drag-over-top', 'drag-over-bottom');
-            });
+            li.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0 || e.target.classList.contains('playlist-item-remove')) return;
+            const startY = e.clientY;
+            let isDraggingItem = false;
+            let ghostEl = null;
 
             const rect = li.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
+            const grabOffsetX = e.clientX - rect.left;
+            const grabOffsetY = e.clientY - rect.top;
 
-            if (e.clientY < midY) {
-            li.classList.add('drag-over-top');
+            const onPointerMove = (moveEvent) => {
+            if (!isDraggingItem && Math.abs(moveEvent.clientY - startY) > 5) {
+            isDraggingItem = true;
+            draggedItemIndex = index;
+            li.classList.add('dragging');
+            playlistList.classList.add('is-dragging');
+
+            ghostEl = li.cloneNode(true);
+            ghostEl.classList.remove('dragging');
+            ghostEl.style.position = 'fixed';
+            ghostEl.style.opacity = '0.8';
+            ghostEl.style.pointerEvents = 'none';
+            ghostEl.style.zIndex = '9999';
+            ghostEl.style.width = rect.width + 'px';
+            ghostEl.style.margin = '0';
+            ghostEl.style.boxShadow = '0px 4px 12px rgba(0,0,0,0.5)';
+            document.body.appendChild(ghostEl);
+            }
+            if (!isDraggingItem) return;
+
+            if (ghostEl) {
+            ghostEl.style.left = (moveEvent.clientX - grabOffsetX) + 'px';
+            ghostEl.style.top = (moveEvent.clientY - grabOffsetY) + 'px';
+            }
+
+            const children = Array.from(playlistList.children);
+            children.forEach(item => item.classList.remove('drag-over-top', 'drag-over-bottom'));
+
+            const targetEl = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+            const targetLi = targetEl ? targetEl.closest('.playlist-item') : null;
+
+            if (targetLi && playlistList.contains(targetLi)) {
+            const targetIdx = children.indexOf(targetLi);
+            const targetRect = targetLi.getBoundingClientRect();
+            const midY = targetRect.top + targetRect.height / 2;
+
+            if (moveEvent.clientY < midY) {
+            targetLi.classList.add('drag-over-top');
             } else {
-            if (index < playlistFiles.length - 1) {
-            const nextLi = playlistList.children[index + 1];
+            if (targetIdx < playlistFiles.length - 1) {
+            const nextLi = children[targetIdx + 1];
             if (nextLi) nextLi.classList.add('drag-over-top');
             } else {
-            li.classList.add('drag-over-bottom');
+            targetLi.classList.add('drag-over-bottom');
             }
             }
-            });
-
-            li.addEventListener('dragleave', (e) => {
-            if (!li.contains(e.relatedTarget)) {
-            li.classList.remove('drag-over-top', 'drag-over-bottom');
             }
-            });
+            };
 
-            li.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+            const onPointerUp = () => {
+            playlistList.classList.remove('is-dragging');
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
 
-            let targetIndex = index;
+            if (ghostEl) {
+            ghostEl.remove();
+            ghostEl = null;
+            }
+
+            if (!isDraggingItem) return;
+
+            li.classList.remove('dragging');
+            const children = Array.from(playlistList.children);
+            let targetIndex = -1;
             let insertBefore = true;
 
-            Array.from(playlistList.children).forEach((item, idx) => {
+            children.forEach((item, idx) => {
             if (item.classList.contains('drag-over-top')) {
             targetIndex = idx;
             insertBefore = true;
@@ -1962,14 +2052,10 @@
             targetIndex = idx;
             insertBefore = false;
             }
-            });
-
-            Array.from(playlistList.children).forEach(item => {
             item.classList.remove('drag-over-top', 'drag-over-bottom');
             });
 
-            if (draggedItemIndex === null) return;
-
+            if (targetIndex !== -1 && draggedItemIndex !== null) {
             const playingFile = currentPlayIndex !== -1 ? playlistFiles[currentPlayIndex] : null;
             const selectedFile = selectedPlaylistIndex !== -1 ? playlistFiles[selectedPlaylistIndex] : null;
 
@@ -1984,15 +2070,22 @@
             selectedPlaylistIndex = selectedFile ? playlistFiles.indexOf(selectedFile) : -1;
 
             if (document.startViewTransition) {
+            const listRect = playlistList.getBoundingClientRect();
+            document.documentElement.style.setProperty('--clip-top', listRect.top + 'px');
+            document.documentElement.style.setProperty('--clip-right', (window.innerWidth - listRect.right) + 'px');
+            document.documentElement.style.setProperty('--clip-bottom', (window.innerHeight - listRect.bottom) + 'px');
+            document.documentElement.style.setProperty('--clip-left', listRect.left + 'px');
             document.startViewTransition(() => renderPlaylist());
             } else {
             renderPlaylist();
             }
-            });
-
-            li.addEventListener('dragend', () => {
-            li.classList.remove('dragging');
+            }
             draggedItemIndex = null;
+            };
+
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+            window.addEventListener('pointercancel', onPointerUp);
             });
 
             li.addEventListener('mouseenter', () => {
@@ -2037,6 +2130,11 @@
             }
 
             if (document.startViewTransition) {
+            const listRect = playlistList.getBoundingClientRect();
+            document.documentElement.style.setProperty('--clip-top', listRect.top + 'px');
+            document.documentElement.style.setProperty('--clip-right', (window.innerWidth - listRect.right) + 'px');
+            document.documentElement.style.setProperty('--clip-bottom', (window.innerHeight - listRect.bottom) + 'px');
+            document.documentElement.style.setProperty('--clip-left', listRect.left + 'px');
             document.startViewTransition(() => renderPlaylist());
             } else {
             renderPlaylist();
@@ -2073,6 +2171,20 @@
             filesToProcess.push(playlistFiles[index].pairedSrt);
             }
             processVideoFiles(filesToProcess, true);
+            }
+
+            function playNext() {
+                if (playlistFiles.length < 2) return;
+                let nextIndex = currentPlayIndex + 1;
+                if (nextIndex >= playlistFiles.length) nextIndex = 0; // Wrap around
+                playPlaylistItem(nextIndex);
+            }
+
+            function playPrev() {
+                if (playlistFiles.length < 2) return;
+                let prevIndex = currentPlayIndex - 1;
+                if (prevIndex < 0) prevIndex = playlistFiles.length - 1; // Wrap around
+                playPlaylistItem(prevIndex);
             }
 
             // --- SYNC ENGINE AND UI CONTROLS ---
@@ -2185,6 +2297,14 @@
             const s = Math.floor(seconds % 60);
             if (h > 0) return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
             return `${m}:${s < 10 ? '0' : ''}${s}`;
+            }
+
+            btnPrev.addEventListener('click', playPrev);
+            btnNext.addEventListener('click', playNext);
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+                navigator.mediaSession.setActionHandler('nexttrack', playNext);
             }
 
             btnPlayPause.addEventListener('click', () => {
@@ -2360,9 +2480,14 @@
 
             window.addEventListener('resize', () => {
             updateSliderMax();
+            if (isFitToPageEnabled && nativeWidth && nativeHeight) {
+                sizeSlider.value = currentFitScale;
+                updateVideoSize(currentFitScale);
+            }
             });
 
             sizeSlider.addEventListener('input', function(e) {
+            if (isFitToPageEnabled) setFitToPage(false, false);
             updateVideoSize(e.target.value);
             });
 
@@ -2449,31 +2574,72 @@
             }, { passive: false });
 
             btnFit.addEventListener('click', function() {
-            if (nativeWidth && nativeHeight) {
-            sizeSlider.value = currentFitScale;
-            updateVideoSize(currentFitScale);
-            }
+            setFitToPage(!isFitToPageEnabled);
             });
 
             document.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'INPUT') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-            if (e.code === 'Space') {
-            e.preventDefault();
-            if (videoPlayer.readyState === 0 && playlistFiles.length > 0) {
-            playPlaylistItem(0);
-            } else if (videoPlayer.paused && videoPlayer.readyState > 0) {
-            videoPlayer.play();
-            audioPlayer.play().catch(err => console.log(err));
-            showIndicator(true);
-            } else if (!videoPlayer.paused) {
-            videoPlayer.pause();
-            showIndicator(false);
-            }
+            const key = e.key.toLowerCase();
+
+            if (e.code === 'Space' || key === 'k') {
+                e.preventDefault();
+                if (videoPlayer.readyState === 0 && playlistFiles.length > 0) {
+                    playPlaylistItem(0);
+                } else if (videoPlayer.paused && videoPlayer.readyState > 0) {
+                    videoPlayer.play();
+                    audioPlayer.play().catch(err => console.log(err));
+                    showIndicator(true);
+                } else if (!videoPlayer.paused) {
+                    videoPlayer.pause();
+                    showIndicator(false);
+                }
             } else if (e.code === 'ArrowLeft') {
-            videoPlayer.currentTime -= 5;
+                e.preventDefault();
+                videoPlayer.currentTime -= 5;
             } else if (e.code === 'ArrowRight') {
-            videoPlayer.currentTime += 5;
+                e.preventDefault();
+                videoPlayer.currentTime += 5;
+            } else if (key === 'j') {
+                videoPlayer.currentTime -= 10;
+            } else if (key === 'l') {
+                videoPlayer.currentTime += 10;
+            } else if (e.code === 'ArrowUp') {
+                e.preventDefault();
+                volumeSlider.stepUp(5);
+                volumeSlider.dispatchEvent(new Event('input'));
+            } else if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                volumeSlider.stepDown(5);
+                volumeSlider.dispatchEvent(new Event('input'));
+            } else if (key === 'm') {
+                muteIcon.click();
+            } else if (key === 'f') {
+                btnFullscreen.click();
+            } else if (key === 'c') {
+                if (subSelect.options.length > 0) {
+                    if (subSelect.value === 'unload') {
+                        let targetVal = '0';
+                        for (let i = 0; i < subSelect.options.length; i++) {
+                            if (subSelect.options[i].value !== 'unload' && subSelect.options[i].value !== 'load') {
+                                targetVal = subSelect.options[i].value;
+                                break;
+                            }
+                        }
+                        subSelect.value = (previousSubSelection && previousSubSelection !== 'unload' && previousSubSelection !== 'load') ? previousSubSelection : targetVal;
+                    } else {
+                        subSelect.value = 'unload';
+                    }
+                    applySubtitleSelection();
+                }
+            } else if (key === 'r') {
+                btnLoop.click();
+            } else if (key === 'n') {
+                if (typeof playNext === 'function') playNext();
+            } else if (key === 'p') {
+                if (typeof playPrev === 'function') playPrev();
+            } else if (key === 't') {
+                btnFit.click();
             }
             });
 
