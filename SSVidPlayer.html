@@ -791,7 +791,7 @@
 
         <div id="playOverlay" class="play-overlay visible">
             <div id="overlayContent" class="overlay-content">
-                <div class="play-text">Double-click anywhere, or drag and drop an .mp4 file.</div>
+                <div class="play-text" id="introText">Double-click anywhere, or drag and drop an .mp4 file.</div>
             </div>
         </div>
 
@@ -1095,6 +1095,14 @@
 
             window.addEventListener('load', () => {
             videoFileInput.value = '';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('isNative') === '1') {
+                const introText = document.getElementById('introText');
+                if (introText) {
+                    introText.innerText = 'Double-click anywhere, or drag and drop a media file.';
+                }
+            }
 
             const savedAmbient = localStorage.getItem('ssvid_ambientEnabled');
             const savedGlow = localStorage.getItem('ssvid_glowIntensity');

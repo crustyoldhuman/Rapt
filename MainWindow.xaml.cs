@@ -416,7 +416,7 @@ namespace SSVidPlayer
 			};
 
 			// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
-			PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html");
+			PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html?isNative=1");
 		}
 
 		public async Task ProcessExternalFileAsync(string filePath)
