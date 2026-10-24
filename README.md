@@ -34,14 +34,6 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 <p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/d04e825d-4844-409a-9f64-46792700655c" /></p>
 
-## Requirements
-
-* A PC with a graphics card that supports super sampling (I have not been able to test this on an AMD gpu, if you can, please let me know! It should work--it uses the same piping to get the super sampling to work as nvidia)
-* A video file to play
-* A screen to play it on
-* A browser that supports HTML5
-* A brain, but does not need to be particularly good
-
 ## Other Features
 
 - **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
@@ -73,6 +65,14 @@ All the other bells and whistles are just cherries on top of that core purpose.
   * Scroll-wheel support for volume, size, and cropping values
   * Loop toggling for background media
   * Auto-hiding, distraction-free UI
+ 
+## Requirements
+
+* A PC with a graphics card that supports super sampling (I have not been able to test this on an AMD gpu, if you can, please let me know! It should work--it uses the same piping to get the super sampling to work as nvidia)
+* A video file to play
+* A screen to play it on
+* A browser that supports HTML5
+* A brain, but does not need to be particularly good
 
 ## How to Use
 
