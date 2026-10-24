@@ -22,7 +22,7 @@ A native Windows desktop application or standalone HTML5 video player for PC des
 
 ## Why This Exists
 
-Trying to play upscaled local videos on Windows the way streaming videos upscale is a sh**show nightmare. Trying to enable the super sampling in VLC did nothing for me, and I did not want to have a second media player like MP-HC I didn't even like just for VSR. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
+Trying to play upscaled local videos on Windows the way streaming videos upscale is a sh**show nightmare. No matter what I did VLC would not enable my nvidia super resolution feature, and I did not want to have a second media player like MP-HC I didn't even like just for VSR. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring deep media player settings or obscure plugins that don't even end up working half the time.
 
 SSVidPlayer exists for one core purpose: **to make local video AI upscaling easy.**
 
