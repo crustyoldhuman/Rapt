@@ -8,14 +8,16 @@
 -->
 A native Windows desktop application or standalone HTML5 video player for PC designed to apply native AI video upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files, all while remaining entirely local and privacy-respecting.
 
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/7d4037fd-9c6e-4980-bda8-28ffcf61859c" /></p>
+
 ***Note:*** *this is not intended in any way for mobile devices.*
 <h3 align="center">
   <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">!!~Try SSVidPlayer in your browser right now, no download required! Click here.~!!</a>
 </h3>
 <br>
-<p align="center"><img width="900" alt="VidPlayingScreenie" src="https://github.com/user-attachments/assets/1e4a05ae-0547-41a6-a214-6fb68b07b5a5" /></p>
 
-<p align="center"><img width="1200" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/1ee491e3-2f99-457a-a335-2f2ec2abb029" /></p>
+<p align="center"><img width="900" alt="super sampling on/off" src="https://github.com/user-attachments/assets/1ee491e3-2f99-457a-a335-2f2ec2abb029" /></p>
+
 
 ## Why This Exists
 
@@ -23,10 +25,15 @@ Trying to play upscaled local videos on Windows the way streaming videos upscale
 
 SSVidPlayer exists for one core purpose: **to make local video AI upscaling easy.**
 
+<p align="center"><img width="500" src="https://github.com/user-attachments/assets/243b8905-2d7c-4a75-aa6e-ce186753cd50" /></p>
+
 Even if VLC VSR or MP-C works for you, if you just want to bring some videos to a friends house on a flash drive to watch on their PC or something you're still stuck bringing a whole portable media player setup or just giving up on super sampling on their computer. With this workaround, you can easily take advantage of anyone's fancy efficient GPU VSR without any setup fuss at all. By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. If your upscaling works on YouTube or other streaming videos, it will work on SSVidPlayer as well.
 
 All the other bells and whistles are just cherries on top of that core purpose.
 <br><br>
+
+<p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/0d5269f1-7c32-4e6d-b8b9-059118b87451" /></p>
+
 
 ## Requirements
 
