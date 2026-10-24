@@ -1870,6 +1870,8 @@
             });
 
             window.addEventListener('mousemove', (e) => {
+                if (e.clientX === 0 && e.clientY === 0) return;
+
                 if (e.clientX <= window.innerWidth * 0.15) {
                     playlistHandle.classList.add('show-indicator');
                     if (e.clientX <= window.innerWidth * 0.03) {
