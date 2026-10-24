@@ -38,7 +38,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 ## Requirements
 
-* A PC with a graphics card that supports super sampling (I have not been able to test this on an AMD gpu, if you can, please let me know!)
+* A PC with a graphics card that supports super sampling (I have not been able to test this on an AMD gpu, if you can, please let me know! It should work--it uses the same piping to get the super sampling to work as nvidia)
 * A video file to play
 * A screen to play it on
 * A browser that supports HTML5
