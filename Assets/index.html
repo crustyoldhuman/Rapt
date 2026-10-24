@@ -1972,15 +1972,17 @@
 
             renderPlaylist();
 
-            isPlaylistLockedOpen = true;
-            playlistPanel.classList.add('open');
-            clearTimeout(playlistLockTimer);
-            playlistLockTimer = setTimeout(() => {
-            isPlaylistLockedOpen = false;
-            if (!playlistPanel.matches(':hover')) {
-            playlistPanel.classList.remove('open');
+            if (!e.target._isRestoring) {
+                isPlaylistLockedOpen = true;
+                playlistPanel.classList.add('open');
+                clearTimeout(playlistLockTimer);
+                playlistLockTimer = setTimeout(() => {
+                    isPlaylistLockedOpen = false;
+                    if (!playlistPanel.matches(':hover')) {
+                        playlistPanel.classList.remove('open');
+                    }
+                }, 2500);
             }
-            }, 2500);
             }
             e.target.value = '';
             });
