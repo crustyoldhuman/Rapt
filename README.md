@@ -8,7 +8,8 @@
 -->
 A native Windows desktop application or standalone HTML5 video player for PC designed to apply native AI video upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/7d4037fd-9c6e-4980-bda8-28ffcf61859c" /></p>
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/310e0d52-3719-4f21-b700-8983cc34237c" /></p>
+
 
 ***Note:*** *this is not intended in any way for mobile devices.*
 <h3 align="center">
@@ -32,7 +33,7 @@ Even if VLC VSR or MP-C works for you, if you just want to bring some videos to 
 All the other bells and whistles are just cherries on top of that core purpose.
 <br><br>
 
-<p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/0d5269f1-7c32-4e6d-b8b9-059118b87451" /></p>
+<p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/d07d370f-1ef7-4747-b659-ab91d5f3e0c6" /></p>
 
 
 ## Requirements
