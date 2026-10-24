@@ -8,8 +8,7 @@
 -->
 A native Windows desktop application or standalone HTML5 video player for PC designed to apply native AI video upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/310e0d52-3719-4f21-b700-8983cc34237c" /></p>
-
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/e6f529f6-cee5-4171-a359-6aaf3395ca6d" /></p>
 
 ***Note:*** *this is not intended in any way for mobile devices.*
 <h3 align="center">
@@ -26,15 +25,14 @@ Trying to play upscaled local videos on Windows the way streaming videos upscale
 
 SSVidPlayer exists for one core purpose: **to make local video AI upscaling easy.**
 
-<p align="center"><img width="500" src="https://github.com/user-attachments/assets/243b8905-2d7c-4a75-aa6e-ce186753cd50" /></p>
+<p align="center"><img width="500" src="https://github.com/user-attachments/assets/b0dab382-d3d6-4f76-ab22-d4e4bd938758" /></p>
 
 Even if VLC VSR or MP-C works for you, if you just want to bring some videos to a friends house on a flash drive to watch on their PC or something you're still stuck bringing a whole portable media player setup or just giving up on super sampling on their computer. With this workaround, you can easily take advantage of anyone's fancy efficient GPU VSR without any setup fuss at all. By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. If your upscaling works on YouTube or other streaming videos, it will work on SSVidPlayer as well.
 
 All the other bells and whistles are just cherries on top of that core purpose.
 <br><br>
 
-<p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/d07d370f-1ef7-4747-b659-ab91d5f3e0c6" /></p>
-
+<p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/d04e825d-4844-409a-9f64-46792700655c" /></p>
 
 ## Requirements
 
