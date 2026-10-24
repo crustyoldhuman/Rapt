@@ -122,6 +122,8 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 - In the standalone HTML version, `.srt` files are required for subtitles. Embedded subtitles will not work natively in browsers, but they are fully supported and extracted automatically in the Windows App version.
 
+- The HTML version basically requires `.mp4` file videos. It does accept `.mkv` depending on how it was encoded, but it's a crap shoot and not worth the gamble imo. The windows app version seems to do better with other file types if you need them. Sorry, but the goal here is easy VSR, not broad compatibility.
+
 - The ambilight glow effect will look wonky if there are any black edges or bars permanently embedded into a playing video file. Use the cropping tool to fix this problem.
 
 - I am unsure if this supports upscaling via AMD or not, because I have no access to an AMD GPU. If anyone can tell me if this works or not, that'd be great!
