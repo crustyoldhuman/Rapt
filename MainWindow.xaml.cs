@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -17,6 +18,7 @@ namespace SSVidPlayer
 	{
 		private string? _pendingFilePath;
 		private bool _isPageReady = false;
+		private CancellationTokenSource? _subtitleCts;
 		private readonly Dictionary<string, string> _fileMap = new(StringComparer.OrdinalIgnoreCase);
 		private readonly string _playlistFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SSVidPlayer", "playlist.json");
 
@@ -56,28 +58,39 @@ namespace SSVidPlayer
 
 		private async void InitializeWebViewAsync()
 		{
-			// Use Windows-native D3D11/MediaFoundation flags only (VaapiVideoDecoder is Linux-only and disrupts Windows D3D11 overlays).
-			Environment.SetEnvironmentVariable(
-				"WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-				"--autoplay-policy=no-user-gesture-required --enable-gpu-rasterization --enable-clear-hevc-for-testing --enable-features=MediaFoundationD3D11VideoCapture,PlatformHEVCDecoderSupport"
-			);
+			try
+			{
+				// Use Windows-native D3D11/MediaFoundation flags only (VaapiVideoDecoder is Linux-only and disrupts Windows D3D11 overlays).
+				Environment.SetEnvironmentVariable(
+					"WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+					"--autoplay-policy=no-user-gesture-required --enable-gpu-rasterization --enable-clear-hevc-for-testing --enable-features=MediaFoundationD3D11VideoCapture,PlatformHEVCDecoderSupport"
+				);
 
-			string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SSVidPlayer", "WebView2");
-			Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", userDataFolder);
+				string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SSVidPlayer", "WebView2");
+				Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", userDataFolder);
 
-			await PlayerWebView.EnsureCoreWebView2Async();
+				await PlayerWebView.EnsureCoreWebView2Async();
 
-			// REQUIRED FOR NVIDIA VSR: DWM rejects Hardware Overlays if the WebView2 surface has potential transparency.
-			PlayerWebView.DefaultBackgroundColor = Colors.Black;
+				// REQUIRED FOR NVIDIA VSR: DWM rejects Hardware Overlays if the WebView2 surface has potential transparency.
+				PlayerWebView.DefaultBackgroundColor = Colors.Black;
 
-			// Let WebView2 handle file drops and pointer events natively
+				// Let WebView2 handle file drops and pointer events natively
 
-			var coreWv = PlayerWebView.CoreWebView2;
-			coreWv.Settings.AreDefaultContextMenusEnabled = false;
-			coreWv.Settings.AreDevToolsEnabled = false;
+				var coreWv = PlayerWebView.CoreWebView2;
+				coreWv.Settings.AreDefaultContextMenusEnabled = false;
+				coreWv.Settings.AreDevToolsEnabled = false;
 
-			// Sync WebView2 HTML Fullscreen API (btnFullscreen) with the native WinUI 3 Window
-			coreWv.ContainsFullScreenElementChanged += (s, e) =>
+				coreWv.NewWindowRequested += async (s, e) =>
+				{
+					e.Handled = true;
+					if (Uri.TryCreate(e.Uri, UriKind.Absolute, out Uri? targetUri))
+					{
+						await Windows.System.Launcher.LaunchUriAsync(targetUri);
+					}
+				};
+
+				// Sync WebView2 HTML Fullscreen API (btnFullscreen) with the native WinUI 3 Window
+				coreWv.ContainsFullScreenElementChanged += (s, e) =>
 			{
 				bool isFullScreen = coreWv.ContainsFullScreenElement;
 				this.AppWindow.SetPresenter(
@@ -122,7 +135,7 @@ namespace SSVidPlayer
 								}
 							}
 							Directory.CreateDirectory(Path.GetDirectoryName(_playlistFile)!);
-							File.WriteAllText(_playlistFile, saveArray.ToJsonString());
+							await File.WriteAllTextAsync(_playlistFile, saveArray.ToJsonString());
 						}
 					}
 
@@ -153,7 +166,7 @@ namespace SSVidPlayer
 							var savePicker = new Windows.Storage.Pickers.FileSavePicker();
 							WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
 							savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-							savePicker.FileTypeChoices.Add("JSON Playlist", new List<string>() { ".json" });
+							savePicker.FileTypeChoices.Add("JSON Playlist", [".json"]);
 							savePicker.SuggestedFileName = "SSVid_Playlist";
 
 							var file = await savePicker.PickSaveFileAsync();
@@ -216,19 +229,27 @@ namespace SSVidPlayer
 							}
 
 							// Phase 2: Asynchronously extract subtitles without blocking file ingestion
+							_subtitleCts?.Cancel();
+							_subtitleCts?.Dispose();
+							_subtitleCts = new CancellationTokenSource();
+							var token = _subtitleCts.Token;
+
 							foreach (var obj in e.AdditionalObjects)
 							{
+								if (token.IsCancellationRequested) break;
 								if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
 								{
 									if (!webFile.Path.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
 									{
-										string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(webFile.Path);
-										if (!string.IsNullOrWhiteSpace(extractedSrt))
+										string videoFileName = Path.GetFileName(webFile.Path);
+										string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(webFile.Path, token);
+										if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
 										{
 											var srtPayload = new JsonObject
 											{
 												["type"] = "LOAD_SRT",
-												["srtName"] = Path.ChangeExtension(Path.GetFileName(webFile.Path), ".srt"),
+												["videoName"] = videoFileName,
+												["srtName"] = Path.ChangeExtension(videoFileName, ".srt"),
 												["srtContent"] = extractedSrt
 											};
 											SendBridgeMessage(srtPayload.ToJsonString());
@@ -344,6 +365,15 @@ namespace SSVidPlayer
                         playOverlay.classList.add('visible');
                         overlayContent.innerHTML = '<div class=""spinner""></div><div class=""play-text"">Loading video...</div>';
 
+                        if (currentVideoUrl) {
+                            URL.revokeObjectURL(currentVideoUrl);
+                            currentVideoUrl = null;
+                        }
+                        if (currentAudioUrl) {
+                            URL.revokeObjectURL(currentAudioUrl);
+                            currentAudioUrl = null;
+                        }
+
                         videoPlayer.src = msg.videoUrl;
                         audioPlayer.src = msg.audioUrl;
                         isFirstFrame = true;
@@ -358,18 +388,29 @@ namespace SSVidPlayer
                     }
 
                     if (msg.type === 'LOAD_SRT' && msg.srtContent) {
-                        setTimeout(() => {
-                            const blob = new Blob([msg.srtContent], { type: 'text/plain' });
-                            const syntheticFile = new File([blob], msg.srtName || 'embedded.srt', { type: 'text/plain' });
+                        const blob = new Blob([msg.srtContent], { type: 'text/plain' });
+                        const syntheticFile = new File([blob], msg.srtName || 'embedded.srt', { type: 'text/plain' });
 
-                            if (videoPlayer.readyState >= 1) {
-                                loadSrt(syntheticFile);
-                            } else {
-                                videoPlayer.addEventListener('loadedmetadata', () => {
-                                    loadSrt(syntheticFile);
-                                }, { once: true });
+                        if (msg.videoName && typeof playlistFiles !== 'undefined') {
+                            const matchedItem = playlistFiles.find(f => f.name === msg.videoName);
+                            if (matchedItem && !matchedItem.pairedSrt) {
+                                matchedItem.pairedSrt = syntheticFile;
+                                if (typeof renderPlaylist === 'function') renderPlaylist();
                             }
-                        }, 500);
+                        }
+
+                        if (!msg.videoName || filenameDisplay.innerText === msg.videoName) {
+                            const applyIfStillCurrent = () => {
+                                if (!msg.videoName || filenameDisplay.innerText === msg.videoName) {
+                                    loadSrt(syntheticFile);
+                                }
+                            };
+                            if (videoPlayer.readyState >= 1) {
+                                applyIfStillCurrent();
+                            } else {
+                                videoPlayer.addEventListener('loadedmetadata', applyIfStillCurrent, { once: true });
+                            }
+                        }
                     }
                 });
             ";
@@ -415,8 +456,13 @@ namespace SSVidPlayer
 				}
 			};
 
-			// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
-			PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html?isNative=1");
+				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
+				PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html?isNative=1");
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"[WebView2 Init Error] {ex.Message}");
+			}
 		}
 
 		public async Task ProcessExternalFileAsync(string filePath)
@@ -472,12 +518,18 @@ namespace SSVidPlayer
 			SendBridgeMessage(mediaPayload.ToJsonString());
 
 			// 2. Demux embedded subtitles (or companion .srt) in the background and inject into loadSrt(file)
-			string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(filePath);
-			if (!string.IsNullOrWhiteSpace(extractedSrt))
+			_subtitleCts?.Cancel();
+			_subtitleCts?.Dispose();
+			_subtitleCts = new CancellationTokenSource();
+			var token = _subtitleCts.Token;
+
+			string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(filePath, token);
+			if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
 			{
 				var srtPayload = new JsonObject
 				{
 					["type"] = "LOAD_SRT",
+					["videoName"] = fileName,
 					["srtName"] = Path.ChangeExtension(fileName, ".srt"),
 					["srtContent"] = extractedSrt
 				};

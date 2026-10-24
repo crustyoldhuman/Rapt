@@ -40,10 +40,27 @@
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
-        <uap:SplashScreen Image="Assets\SplashScreen.png" />
-      </uap:VisualElements>
-    </Application>
-  </Applications>
+		  <uap:SplashScreen Image="Assets\SplashScreen.png" />
+	  </uap:VisualElements>
+	  <Extensions>
+		  <uap:Extension Category="windows.fileTypeAssociation">
+			  <uap:FileTypeAssociation Name="video">
+				  <uap:SupportedFileTypes>
+					  <uap:FileType>.mp4</uap:FileType>
+					  <uap:FileType>.mkv</uap:FileType>
+				  </uap:SupportedFileTypes>
+			  </uap:FileTypeAssociation>
+		  </uap:Extension>
+		  <uap:Extension Category="windows.fileTypeAssociation">
+			  <uap:FileTypeAssociation Name="subtitles">
+				  <uap:SupportedFileTypes>
+					  <uap:FileType>.srt</uap:FileType>
+				  </uap:SupportedFileTypes>
+			  </uap:FileTypeAssociation>
+		  </uap:Extension>
+	  </Extensions>
+  </Application>
+</Applications>
 
 	<Capabilities>
 		<Capability Name="internetClient" />

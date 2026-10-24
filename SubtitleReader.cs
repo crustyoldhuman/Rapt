@@ -3,14 +3,29 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SSVidPlayer
 {
 	public static partial class SubtitleExtractor
 	{
-		public static async Task<string?> ExtractSrtAsync(string mediaFilePath)
+		public static async Task<string?> ExtractSrtAsync(string mediaFilePath, CancellationToken cancellationToken = default)
 		{
+			string companionSrtPath = Path.ChangeExtension(mediaFilePath, ".srt");
+			if (File.Exists(companionSrtPath))
+			{
+				Debug.WriteLine($"[SubtitleExtractor] Found companion SRT file: {companionSrtPath}");
+				try
+				{
+					return await File.ReadAllTextAsync(companionSrtPath, cancellationToken);
+				}
+				catch (Exception ex)
+				{
+					Debug.WriteLine($"[SubtitleExtractor] Error reading companion SRT: {ex.Message}");
+				}
+			}
+
 			// Extract embedded subtitle track (SubRip / ASS / Mov_Text) to raw SRT string in memory
 			string? ffmpegExe = ResolveFfmpegPath();
 			if (ffmpegExe == null)
@@ -25,8 +40,6 @@ namespace SSVidPlayer
 				var psi = new ProcessStartInfo
 				{
 					FileName = ffmpegExe,
-					// Temporarily change loglevel to 'info' to expose stream mapping errors in Stderr
-					Arguments = $"-v info -i \"{mediaFilePath}\" -vn -an -c:s srt -f srt -",
 					RedirectStandardOutput = true,
 					RedirectStandardError = true,
 					UseShellExecute = false,
@@ -34,8 +47,17 @@ namespace SSVidPlayer
 					StandardOutputEncoding = Encoding.UTF8,
 					StandardErrorEncoding = Encoding.UTF8
 				};
-
-				Debug.WriteLine($"[FFMPEG] Executing Args: {psi.Arguments}");
+				psi.ArgumentList.Add("-v");
+				psi.ArgumentList.Add("info");
+				psi.ArgumentList.Add("-i");
+				psi.ArgumentList.Add(mediaFilePath);
+				psi.ArgumentList.Add("-vn");
+				psi.ArgumentList.Add("-an");
+				psi.ArgumentList.Add("-c:s");
+				psi.ArgumentList.Add("srt");
+				psi.ArgumentList.Add("-f");
+				psi.ArgumentList.Add("srt");
+				psi.ArgumentList.Add("-");
 
 				using var proc = Process.Start(psi);
 				if (proc == null)
@@ -44,13 +66,25 @@ namespace SSVidPlayer
 					return null;
 				}
 
-				var stdOutTask = proc.StandardOutput.ReadToEndAsync();
-				var stdErrTask = proc.StandardError.ReadToEndAsync();
+				using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+				timeoutCts.CancelAfter(TimeSpan.FromSeconds(30));
 
-				await Task.WhenAll(stdOutTask, stdErrTask, proc.WaitForExitAsync());
+				var stdOutTask = proc.StandardOutput.ReadToEndAsync(timeoutCts.Token);
+				var stdErrTask = proc.StandardError.ReadToEndAsync(timeoutCts.Token);
 
-				string srtOutput = stdOutTask.Result;
-				string errOutput = stdErrTask.Result;
+				try
+				{
+					await Task.WhenAll(stdOutTask, stdErrTask, proc.WaitForExitAsync(timeoutCts.Token));
+				}
+				catch (OperationCanceledException)
+				{
+					try { proc.Kill(entireProcessTree: true); } catch { }
+					Debug.WriteLine("[FFMPEG] Process cancelled or timed out.");
+					return null;
+				}
+
+				string srtOutput = await stdOutTask;
+				string errOutput = await stdErrTask;
 
 				Debug.WriteLine($"[FFMPEG] Process exited with code: {proc.ExitCode}");
 
@@ -80,11 +114,11 @@ namespace SSVidPlayer
 		private static string? ResolveFfmpegPath()
 		{
 			string[] candidates =
-			{
+			[
 				Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg.exe"),
 				Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe"),
 				Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WinGet", "Links", "ffmpeg.exe")
-			};
+			];
 
 			foreach (var path in candidates)
 			{
