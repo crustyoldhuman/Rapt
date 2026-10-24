@@ -10,13 +10,13 @@ A native Windows desktop application or standalone HTML5 video player for PC des
 
 <p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/e6f529f6-cee5-4171-a359-6aaf3395ca6d" /></p>
 
-***Note:*** *this is not intended in any way for mobile devices.*
+***Note:*** *SSVidPlayer is not intended for mobile devices.*
 <h3 align="center">
   <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">!!~Try SSVidPlayer in your browser right now, no download required. Click here~!!</a>
 </h3>
 <br>
 
-<p align="center"><img width="900" alt="super sampling on/off" src="https://github.com/user-attachments/assets/1ee491e3-2f99-457a-a335-2f2ec2abb029" /></p>
+<p align="center"><img width="800" alt="super sampling on/off" src="https://github.com/user-attachments/assets/1ee491e3-2f99-457a-a335-2f2ec2abb029" /></p>
 
 
 ## Why This Exists
