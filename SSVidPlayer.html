@@ -680,6 +680,44 @@
             .close-popup-btn:hover {
                 transform: scale(1.2);
             }
+            .update-popup {
+                position: fixed;
+                bottom: 140px;
+                left: 50%;
+                transform: translateX(-50%) translateY(20px);
+                background-color: rgba(30, 30, 30, 0.95);
+                border: 1px solid #000000;
+                border-radius: 8px;
+                padding: 15px 40px 15px 20px;
+                color: #23A620;
+                z-index: 1000;
+                box-shadow: 0px 4px 12px rgba(0,0,0,0.5);
+                font-size: 14px;
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+                transition: opacity 0.5s ease, transform 0.5s ease, visibility 0.5s ease;
+            }
+            .update-popup.show {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+                transform: translateX(-50%) translateY(0);
+            }
+            .update-popup a {
+                color: #3b82f6;
+                text-decoration: underline;
+            }
+            .update-popup-close {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                color: #ff5555;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                user-select: none;
+            }
         </style>
     </head>
     <body>
@@ -740,11 +778,11 @@
                     </div>
                 </div>
 
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 32px; width: 70px; gap: 0px;">
                     <div class="ui-group">
                         <input type="checkbox" id="ambientToggle"> <label for="ambientToggle" style="cursor: pointer; user-select: none; margin-left: -4px;">Glow</label>
                     </div>
-                    <div id="glowIntensityGroup" style="display: none;">
+                    <div id="glowIntensityGroup" style="display: none; margin-top: 2px;">
                         <input type="range" id="glowSlider" min="1" max="100" value="80" style="width: 65px;" title="Glow Intensity">
                     </div>
                 </div>
@@ -881,7 +919,13 @@
             </div>
         </div>
 
+        <div id="updatePopup" class="update-popup">
+            <div id="updatePopupClose" class="update-popup-close" title="Dismiss">&#10006;</div>
+            SSVidPlayer got an update! Click <a href="https://github.com/crustyoldhuman/SSVidPlayer/releases" target="_blank" id="updateLink">here</a> to get the new version.
+        </div>
+
         <script>
+            const APP_VERSION = "1.2.0.0"; // Update this with each release
             const videoFileInput = document.getElementById('videoFileInput');
             const videoPlayer = document.getElementById('videoPlayer');
             const audioPlayer = document.getElementById('audioPlayer');
@@ -914,6 +958,48 @@
             const subSizeSlider = document.getElementById('subSizeSlider');
             const subScaleValue = document.getElementById('subScaleValue');
             const customSubContainer = document.getElementById('customSubContainer');
+
+            const updatePopup = document.getElementById('updatePopup');
+            const updatePopupClose = document.getElementById('updatePopupClose');
+            const updateLink = document.getElementById('updateLink');
+
+            function checkForUpdates() {
+                fetch('https://api.github.com/repos/crustyoldhuman/SSVidPlayer/releases/latest')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.tag_name) {
+                            const latestVersion = data.tag_name.replace(/[^0-9.]/g, '');
+                            const currentParts = APP_VERSION.split('.').map(Number);
+                            const latestParts = latestVersion.split('.').map(Number);
+                            let hasUpdate = false;
+
+                            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+                                const c = currentParts[i] || 0;
+                                const l = latestParts[i] || 0;
+                                if (l > c) { hasUpdate = true; break; }
+                                if (l < c) { break; }
+                            }
+
+                            if (hasUpdate) {
+                                updateLink.href = data.html_url;
+                                setTimeout(() => {
+                                    updatePopup.classList.add('show');
+                                }, 1500); // 1.5 seconds delay before animating in
+                            }
+                        }
+                    })
+                    .catch(() => { /* Fail silently if offline or blocked */ });
+            }
+
+            updatePopupClose.addEventListener('click', () => {
+                updatePopup.classList.remove('show');
+            });
+
+            updateLink.addEventListener('click', () => {
+                updatePopup.classList.remove('show');
+            });
+
+            checkForUpdates();
 
             const playlistPanel = document.getElementById('playlistPanel');
             const playlistHandle = document.getElementById('playlistHandle');
