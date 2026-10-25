@@ -132,7 +132,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 - **Frontend:** Vanilla HTML5, CSS3, and JavaScript utilizing the native `<video>` and `<track>` APIs, Canvas API, and File API.
 - **Windows App Host:** WinUI 3 (C#) desktop application with OS-level file associations.
 - **Engine:** WebView2 Chromium edge utilizing URL separation to isolate media pipelines and preserve DirectComposition Hardware Overlay fast-paths.
-- **Subtitle Demuxing:** FFmpegCore/FFmpeg for in-memory embedded subtitle extraction to `.srt` format.
+- **Subtitle Demuxing:** FFmpegCore/FFmpeg for in-memory embedded subtitle extraction to `.srt` format. (only used in the Windows implementation)
 
 ---
 *Created with love by [crustyoldhuman](https://github.com/crustyoldhuman)*
