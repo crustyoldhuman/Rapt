@@ -1,6 +1,5 @@
-<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/3407e1b0-1d2a-4a6f-bfd6-d6fc6c2d9397" /></p>
+<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/1061749b-69e1-4a03-97f6-f28ec9a2f328" /></p>
 <br>
-
 
 # SSVidPlayer (Super Sampling Video Player)
 <!--
