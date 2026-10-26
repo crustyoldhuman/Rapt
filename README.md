@@ -1,6 +1,5 @@
-<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/3407e1b0-1d2a-4a6f-bfd6-d6fc6c2d9397" /></p>
+<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/1061749b-69e1-4a03-97f6-f28ec9a2f328" /></p>
 <br>
-
 
 # SSVidPlayer (Super Sampling Video Player)
 <!--
@@ -21,7 +20,7 @@ A native Windows desktop application or standalone HTML5 video player for PC des
 
 ## Why This Exists
 
-Trying to play upscaled local videos on Windows the way streaming videos upscale is a sh**show nightmare. No matter what I did VLC would not enable my nvidia super resolution feature, and I did not want to have a second media player like MP-HC I didn't even like just for VSR. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring deep media player settings or obscure plugins that don't even end up working half the time.
+Trying to play your downloaded videos with upscaling on Windows the way streaming videos upscale is a sh**show nightmare. No matter what, I did VLC would not enable my nvidia super resolution feature, and I could not get MP-HC or other alternatives to trigger it either. Getting your $800+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring deep media player settings or obscure plugins that don't even end up working half the time.
 
 SSVidPlayer exists for one core purpose: **to make local video AI upscaling easy.**
 
@@ -34,32 +33,32 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 <p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/d04e825d-4844-409a-9f64-46792700655c" /></p>
 
-## Other Features
+## Other Bells & Whistles
 
-- **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
+- **Video Scaling:** Because low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
   
-- **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and AI upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time to fix both of these problems.
+- **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time to fix both of these problems.
   
-- **Playlist Manager:** Load multiple videos and save/load your playlists for continuous playback. Drag-and-drop your media to resort your list. Saving/loading only available on Windows app. 
+- **Playlist Manager:** Load multiple videos and save/load your playlists for continuous playback. Drag-and-drop your media to re-sort your list. Saving/loading is only supported on Windows app. 
 
-- **250% Audio Amplification:** Bypasses standard browser volume limits using the Web Audio API `GainNode`, allowing you to boost quiet audio tracks up to 2.5x (250%) their native volume.
+- **250% Audio Amplification:** Boosts your volume limit by using the Web Audio API `GainNode`, allowing you to turn up quiet audio tracks up to 2.5x (250%) their volume.
 
-- **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping edges.
+- **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your page height and scales the video to utilize the maximum available screen real estate.
 
 - **Advanced Subtitle Engine:**
 
   * **Native Demuxing (Windows App):** Automatically extracts embedded subtitles directly from `.mkv` and `.mp4` containers.
   * Drag-and-drop `.srt` support with on-the-fly `.vtt` conversion.
   * Dual-load support: Load a video and it's partner `.srt` file at the same time, even when adding multiple videos to the playlist at once. Just make sure the `.srt` and the video file share the same filename. 
-  * Real-time **Sub-Sync** offset (click or scroll the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
-  * Draggable subtitles (click and move text anywhere on the screen).
+  * Real-time Subtitle Sync: To adjust the subtitle sync settings, click or scroll the **+** / **-** to fix out-of-sync text.
+  * Draggable subtitles (click and move subtitle text anywhere on the screen).
   * Adjustable subtitle font size.
 
 - **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
 
-- **Broad Media Support:** Plays `.mp4`, `.mkv` (if the browser supports the codec), and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files.
+- **Broad Media Support:** Plays `.mp4`, `.mkv` (if the browser supports the codec), and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. The Windows app version increases filetype support slightly, so if `.mkv` are important to you, download the installer. 
 
-- **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads.
+- **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads. The only thing it does on the internet is checks GitHub for updates once when it's loaded. 
 
 - **Other Bells & Whistles:**
   * Scroll-wheel support for volume, size, and cropping values
@@ -120,19 +119,20 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 ## Known Limitations
 
-- In the standalone HTML version, `.srt` files are required for subtitles. Embedded subtitles will not work natively in browsers, but they are fully supported and extracted automatically in the Windows App version.
+- In the standalone HTML version, `.srt` files are required for subtitles. Embedded subtitles will not work natively in browsers, but they are fully supported in the Windows App version.
 
 - The HTML version basically requires `.mp4` file videos. It does accept `.mkv` depending on how it was encoded, but it's a crap shoot and not worth the gamble imo. The windows app version seems to do better with other file types if you need them. Sorry, but the goal here is easy VSR, not broad compatibility.
 
-- The ambilight glow effect will look wonky if there are any black edges or bars permanently embedded into a playing video file. Use the cropping tool to fix this problem.
+- The ambilight glow effect will look wonky if there are any black edges or bars permanently embedded into a playing video file. Use the edge cropping tool to fix this.
 
 - I am unsure if this supports upscaling via AMD or not, because I have no access to an AMD GPU. If anyone can tell me if this works or not, that'd be great!
+
 ## Technical Stack
 
 - **Frontend:** Vanilla HTML5, CSS3, and JavaScript utilizing the native `<video>` and `<track>` APIs, Canvas API, and File API.
 - **Windows App Host:** WinUI 3 (C#) desktop application with OS-level file associations.
 - **Engine:** WebView2 Chromium edge utilizing URL separation to isolate media pipelines and preserve DirectComposition Hardware Overlay fast-paths.
-- **Subtitle Demuxing:** FFmpegCore/FFmpeg for in-memory embedded subtitle extraction to `.srt` format.
+- **Subtitle Demuxing:** FFmpegCore/FFmpeg for in-memory embedded subtitle extraction to `.srt` format. (only used in the Windows implementation)
 
 ---
 *Created with love by [crustyoldhuman](https://github.com/crustyoldhuman)*
