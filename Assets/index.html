@@ -885,7 +885,7 @@
         <video width="640" id="videoPlayer" muted>
             Your browser does not support the video tag.
         </video>
-        <audio id="audioPlayer" style="display: none;" crossorigin="anonymous"></audio>
+        <audio id="audioPlayer" style="display: none;"></audio>
 
         <div id="playbackIndicator" class="playback-indicator">
             <svg id="indicatorPlay" style="display: none; margin-left: 6px;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -1693,10 +1693,10 @@
             }
             });
 
-            videoPlayer.addEventListener('loadedmetadata', function() {
+            function handleMediaReady() {
             seekSlider.disabled = false;
-            nativeWidth = this.videoWidth || 640;
-            nativeHeight = this.videoHeight || 360;
+            nativeWidth = videoPlayer.videoWidth || 640;
+            nativeHeight = videoPlayer.videoHeight || 360;
 
             updateSliderMax();
 
@@ -1751,6 +1751,13 @@
             }
             };
             startPlayback();
+            }
+            
+            videoPlayer.addEventListener('loadedmetadata', handleMediaReady);
+            audioPlayer.addEventListener('loadedmetadata', function() {
+                if (videoPlayer.readyState === 0) {
+                    handleMediaReady();
+                }
             });
 
             function initAudio() {
@@ -1768,7 +1775,14 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             }
 
+            function logState(msg) {
+                if (window.chrome && window.chrome.webview) {
+                    window.chrome.webview.postMessage('LOG: [STATE] ' + msg);
+                }
+            }
+
             videoPlayer.addEventListener('ended', function() {
+            logState('Video ended.');
             if (loopMode === 1) return;
 
             if (currentPlayIndex > -1) {
@@ -1781,13 +1795,19 @@
             });
 
             videoPlayer.addEventListener('waiting', function() {
-            if (!audioPlayer.paused) audioPlayer.pause();
+            logState('Video waiting (buffering stream). Auto-pausing audio to maintain sync.');
+            if (!audioPlayer.paused && videoPlayer.videoWidth > 0) {
+                audioPlayer._isBufferingPause = true;
+                audioPlayer.pause();
+            }
             });
 
             videoPlayer.addEventListener('playing', function() {
+            logState('Video playing. Resuming audio.');
             if (audioPlayer.paused && !videoPlayer.paused) {
             audioPlayer.currentTime = videoPlayer.currentTime;
             audioPlayer.play().catch(() => {});
+            audioPlayer._isBufferingPause = false;
             }
             });
 
@@ -2329,6 +2349,7 @@
             // --- SYNC ENGINE AND UI CONTROLS ---
 
             videoPlayer.addEventListener('play', function() {
+            logState('Video play event fired.');
             playOverlay.classList.remove('visible');
             document.getElementById('iconPlay').style.display = 'none';
             document.getElementById('iconPause').style.display = 'block';
@@ -2346,6 +2367,7 @@
             });
 
             videoPlayer.addEventListener('pause', function() {
+            logState('Video pause event fired.');
             audioPlayer.pause();
             document.getElementById('iconPlay').style.display = 'block';
             document.getElementById('iconPause').style.display = 'none';
@@ -2353,6 +2375,7 @@
 
             // Force the video to match if hardware media keys toggle the audio track
             audioPlayer.addEventListener('play', function() {
+            logState('Audio play event fired.');
             if (videoPlayer.paused) {
             videoPlayer.currentTime = audioPlayer.currentTime;
             videoPlayer.play();
@@ -2361,13 +2384,21 @@
             });
 
             audioPlayer.addEventListener('pause', function() {
-            if (!videoPlayer.paused) {
+            logState('Audio pause event fired. _isBufferingPause=' + !!audioPlayer._isBufferingPause + ' seeking=' + videoPlayer.seeking);
+            // CRITICAL FIX: Prevent the buffering cascade loop from permanently pausing the video during timeline scrubs!
+            if (!videoPlayer.paused && !videoPlayer.seeking && !audioPlayer._isBufferingPause) {
+            logState('Audio pause triggered cascade to pause video.');
             videoPlayer.pause();
             showIndicator(false);
             }
             });
 
+            videoPlayer.addEventListener('seeking', function() {
+            logState('Video seeking...');
+            });
+
             videoPlayer.addEventListener('seeked', function() {
+            logState('Video seeked successfully.');
             applySubtitleSelection();
             });
 
@@ -2505,7 +2536,7 @@
             timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
 
             // Anti-Drift Engine
-            if (!videoPlayer.paused && !audioPlayer.paused) {
+            if (!seekSlider.isDragging && !videoPlayer.paused && !audioPlayer.paused) {
             if (Math.abs(videoPlayer.currentTime - audioPlayer.currentTime) > 0.15) {
             audioPlayer.currentTime = videoPlayer.currentTime;
             }
@@ -2518,11 +2549,46 @@
             }
             });
 
-            seekSlider.addEventListener('mousedown', () => seekSlider.isDragging = true);
-            window.addEventListener('mouseup', () => seekSlider.isDragging = false);
-            seekSlider.addEventListener('touchstart', () => seekSlider.isDragging = true, {passive: true});
-            window.addEventListener('touchend', () => seekSlider.isDragging = false);
-            window.addEventListener('touchcancel', () => seekSlider.isDragging = false);
+            let wasPlayingBeforeDrag = false;
+
+            seekSlider.addEventListener('mousedown', () => {
+            logState('Timeline scrub started (mousedown).');
+            seekSlider.isDragging = true;
+            wasPlayingBeforeDrag = !videoPlayer.paused;
+            });
+
+            window.addEventListener('mouseup', () => {
+            if (seekSlider.isDragging) {
+            logState('Timeline scrub ended (mouseup). Restoring play state: ' + wasPlayingBeforeDrag);
+            seekSlider.isDragging = false;
+            if (wasPlayingBeforeDrag && videoPlayer.paused) {
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
+            }
+            }
+            });
+
+            seekSlider.addEventListener('touchstart', () => {
+            logState('Timeline scrub started (touchstart).');
+            seekSlider.isDragging = true;
+            wasPlayingBeforeDrag = !videoPlayer.paused;
+            }, {passive: true});
+
+            window.addEventListener('touchend', () => {
+            if (seekSlider.isDragging) {
+            logState('Timeline scrub ended (touchend). Restoring play state: ' + wasPlayingBeforeDrag);
+            seekSlider.isDragging = false;
+            if (wasPlayingBeforeDrag && videoPlayer.paused) {
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
+            }
+            }
+            });
+
+            window.addEventListener('touchcancel', () => {
+            seekSlider.isDragging = false;
+            });
+
             seekSlider.addEventListener('input', (e) => {
             if (!isFinite(videoPlayer.duration) || videoPlayer.duration <= 0) return;
             const seekTime = (parseFloat(e.target.value) / 100) * videoPlayer.duration;

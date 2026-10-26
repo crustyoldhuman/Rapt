@@ -44,7 +44,93 @@ namespace SSVidPlayer
 			titleBar.ButtonInactiveBackgroundColor = Colors.Black;
 			titleBar.ButtonInactiveForegroundColor = Colors.Gray;
 
+			PlayerWebView.AllowDrop = true;
+			PlayerWebView.DragOver += PlayerWebView_DragOver;
+			PlayerWebView.Drop += PlayerWebView_Drop;
+
 			InitializeWebViewAsync();
+		}
+
+		private void PlayerWebView_DragOver(object sender, Microsoft.UI.Xaml.DragEventArgs e)
+		{
+			e.AcceptedOperation = DataPackageOperation.Copy;
+			e.DragUIOverride.Caption = "Play media";
+			e.DragUIOverride.IsCaptionVisible = true;
+			e.DragUIOverride.IsContentVisible = true;
+			e.DragUIOverride.IsGlyphVisible = true;
+			e.Handled = true;
+		}
+
+		private async void PlayerWebView_Drop(object sender, Microsoft.UI.Xaml.DragEventArgs e)
+		{
+			App.Log("[DROP] Drop event initiated.");
+			var deferral = e.GetDeferral();
+			var mediaPaths = new List<string>();
+			string? srtPath = null;
+
+			try
+			{
+				if (e.DataView.Contains(StandardDataFormats.StorageItems))
+				{
+					var items = await e.DataView.GetStorageItemsAsync();
+					if (items.Count > 0)
+					{
+						foreach (var item in items)
+						{
+							if (item is Windows.Storage.StorageFile file)
+							{
+								_fileMap[file.Name] = file.Path;
+								if (file.Name.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
+								{
+									srtPath = file.Path;
+								}
+								else
+								{
+									mediaPaths.Add(file.Path);
+								}
+							}
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				App.Log($"[DROP EXCEPTION] {ex.Message}");
+			}
+			finally
+			{
+				e.Handled = true;
+				deferral.Complete();
+			}
+
+			// Force garbage collection to release OS file locks held by the Drag & Drop COM wrappers
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
+			await Task.Delay(100);
+
+			if (mediaPaths.Count > 0)
+			{
+				if (mediaPaths.Count > 1)
+				{
+					var restoreNames = new JsonArray();
+					foreach (var path in mediaPaths)
+					{
+						restoreNames.Add(Path.GetFileName(path));
+					}
+					SendBridgeMessage(new JsonObject { ["type"] = "RESTORE_PLAYLIST", ["items"] = restoreNames }.ToJsonString());
+				}
+
+				await ProcessExternalFileAsync(mediaPaths[0]);
+
+				if (srtPath != null)
+				{
+					await ProcessExternalFileAsync(srtPath);
+				}
+			}
+			else if (srtPath != null)
+			{
+				await ProcessExternalFileAsync(srtPath);
+			}
 		}
 
 		public void LoadInitialFile(string filePath)
@@ -75,7 +161,6 @@ namespace SSVidPlayer
 				PlayerWebView.DefaultBackgroundColor = Colors.Black;
 
 				// Let WebView2 handle file drops and pointer events natively
-
 				var coreWv = PlayerWebView.CoreWebView2;
 				coreWv.Settings.AreDefaultContextMenusEnabled = false;
 				coreWv.Settings.AreDevToolsEnabled = false;
@@ -91,370 +176,286 @@ namespace SSVidPlayer
 
 				// Sync WebView2 HTML Fullscreen API (btnFullscreen) with the native WinUI 3 Window
 				coreWv.ContainsFullScreenElementChanged += (s, e) =>
-			{
-				bool isFullScreen = coreWv.ContainsFullScreenElement;
-				this.AppWindow.SetPresenter(
-					isFullScreen
-						? AppWindowPresenterKind.FullScreen
-						: AppWindowPresenterKind.Default
-				);
-				AppTitleBar.Visibility = isFullScreen ? Visibility.Collapsed : Visibility.Visible;
-			};
-
-			// Map the app's Assets folder to a virtual domain
-			string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
-			coreWv.SetVirtualHostNameToFolderMapping(
-				"app.ssvidplayer",
-				assetsPath,
-				CoreWebView2HostResourceAccessKind.Allow
-			);
-
-			// Handle messages from JS
-			coreWv.WebMessageReceived += async (s, e) =>
-			{
-				try
 				{
-					string msg = e.TryGetWebMessageAsString();
-					if (msg != null && msg.StartsWith("LOG:"))
-					{
-						System.Diagnostics.Debug.WriteLine($"[JS Bridge] {msg[4..]}");
-						return;
-					}
+					bool isFullScreen = coreWv.ContainsFullScreenElement;
+					this.AppWindow.SetPresenter(
+						isFullScreen
+							? AppWindowPresenterKind.FullScreen
+							: AppWindowPresenterKind.Default
+					);
+					AppTitleBar.Visibility = isFullScreen ? Visibility.Collapsed : Visibility.Visible;
+				};
 
-					if (msg != null && msg.Contains("\"type\":\"SAVE_PLAYLIST\""))
+				// Map the app's Assets folder to a virtual domain
+				string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
+				coreWv.SetVirtualHostNameToFolderMapping(
+					"app.ssvidplayer",
+					assetsPath,
+					CoreWebView2HostResourceAccessKind.Allow
+				);
+
+				// --- THE FIX: MANUAL MEDIA INTERCEPTION WITH FULL CORS & RANGE SUPPORT ---
+				coreWv.AddWebResourceRequestedFilter("https://video.ssvidplayer/*", CoreWebView2WebResourceContext.All);
+				coreWv.AddWebResourceRequestedFilter("https://audio.ssvidplayer/*", CoreWebView2WebResourceContext.All);
+
+				coreWv.WebResourceRequested += async (s, e) =>
+				{
+					var deferral = e.GetDeferral();
+					try
 					{
-						if (JsonNode.Parse(msg)?["items"] is JsonArray items)
+						// 1. CORS Preflight for Cross-Origin Audio/Video pipelines
+						if (e.Request.Method.ToUpper() == "OPTIONS")
 						{
-							var saveArray = new JsonArray();
-							foreach (var item in items)
+							e.Response = coreWv.Environment.CreateWebResourceResponse(
+								null, 204, "No Content",
+								"Access-Control-Allow-Origin: *\nAccess-Control-Allow-Methods: GET, OPTIONS\nAccess-Control-Allow-Headers: Range\nAccess-Control-Expose-Headers: Content-Range, Accept-Ranges, Content-Length"
+							);
+							return;
+						}
+
+						Uri uri = new(e.Request.Uri);
+						string fileName = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+
+						if (_fileMap.TryGetValue(fileName, out string? fullPath) && File.Exists(fullPath))
+						{
+							string ext = Path.GetExtension(fullPath).ToLowerInvariant();
+							string mimeType = "application/octet-stream";
+
+							if (ext == ".mp4") mimeType = "video/mp4";
+							else if (ext == ".webm") mimeType = "video/webm";
+							else if (ext == ".mkv") mimeType = "video/x-matroska";
+							else if (ext == ".mp3") mimeType = "audio/mpeg";
+							else if (ext == ".wav") mimeType = "audio/wav";
+							else if (ext == ".ogg") mimeType = "audio/ogg";
+							else if (ext == ".flac") mimeType = "audio/flac";
+
+							// Use standard FileStream to allow concurrent FileAccess.Read bypassing WinRT locking overhead
+							var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+							ulong totalSize = (ulong)fs.Length;
+							ulong start = 0;
+							ulong end = totalSize - 1;
+							int statusCode = 200;
+							string statusText = "OK";
+							string rangeHeader = "";
+
+							try
 							{
-								string? name = (string?)item;
-								if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
+								if (e.Request.Headers.Contains("Range"))
 								{
-									saveArray.Add(new JsonObject { ["name"] = name, ["path"] = fullPath });
+									rangeHeader = e.Request.Headers.GetHeader("Range");
 								}
 							}
-							Directory.CreateDirectory(Path.GetDirectoryName(_playlistFile)!);
-							await File.WriteAllTextAsync(_playlistFile, saveArray.ToJsonString());
-						}
-					}
+							catch { }
 
-					if (msg != null && msg.Contains("\"type\":\"PLAY_RESTORED\""))
-					{
-						string? name = (string?)JsonNode.Parse(msg)?["name"];
-						if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
+							if (!string.IsNullOrEmpty(rangeHeader) && rangeHeader.StartsWith("bytes="))
+							{
+								var range = rangeHeader.Substring(6).Split('-');
+								if (ulong.TryParse(range[0], out ulong sVal)) start = sVal;
+								if (range.Length > 1 && ulong.TryParse(range[1], out ulong eVal)) end = eVal;
+								else end = totalSize - 1;
+
+								statusCode = 206;
+								statusText = "Partial Content";
+							}
+
+							ulong length = end - start + 1;
+
+							// Create an IRandomAccessStream wrapper for the specific chunk Chromium requested
+							var memoryStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+							using (var dataWriter = new Windows.Storage.Streams.DataWriter(memoryStream))
+							{
+								byte[] buffer = new byte[length];
+								fs.Seek((long)start, SeekOrigin.Begin);
+								await fs.ReadAsync(buffer, 0, (int)length);
+								dataWriter.WriteBytes(buffer);
+								await dataWriter.StoreAsync();
+								await dataWriter.FlushAsync();
+								dataWriter.DetachStream();
+							}
+							fs.Dispose();
+							memoryStream.Seek(0);
+
+							// Expose the precise byte ranges Chromium requested so it does not pause the stream engine
+							string headers = $"Content-Type: {mimeType}\nAccept-Ranges: bytes\nContent-Length: {length}\nAccess-Control-Allow-Origin: *\nAccess-Control-Expose-Headers: Content-Range, Accept-Ranges, Content-Length";
+							if (statusCode == 206)
+							{
+								headers += $"\nContent-Range: bytes {start}-{end}/{totalSize}";
+							}
+
+							e.Response = coreWv.Environment.CreateWebResourceResponse(
+								memoryStream,
+								statusCode,
+								statusText,
+								headers
+							);
+						}
+						else
 						{
-							_ = ProcessExternalFileAsync(fullPath);
+							e.Response = coreWv.Environment.CreateWebResourceResponse(null, 404, "Not Found", "");
 						}
 					}
-
-					if (msg != null && msg.Contains("\"type\":\"EXPORT_PLAYLIST\""))
+					catch (Exception ex)
 					{
-						if (JsonNode.Parse(msg)?["items"] is JsonArray items)
-						{
-							var saveArray = new JsonArray();
-							foreach (var item in items)
-							{
-								string? name = (string?)item;
-								if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
-								{
-									saveArray.Add(new JsonObject { ["name"] = name, ["path"] = fullPath });
-								}
-							}
-
-							var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-							var savePicker = new Windows.Storage.Pickers.FileSavePicker();
-							WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
-							savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-							savePicker.FileTypeChoices.Add("JSON Playlist", [".json"]);
-							savePicker.SuggestedFileName = "SSVid_Playlist";
-
-							var file = await savePicker.PickSaveFileAsync();
-							if (file != null)
-							{
-								await Windows.Storage.FileIO.WriteTextAsync(file, saveArray.ToJsonString());
-							}
-						}
+						App.Log($"[WebResourceRequested ERROR] {ex.Message}");
 					}
-
-					if (msg != null && msg.Contains("IMPORT_PLAYLIST"))
+					finally
 					{
-						if (e.AdditionalObjects != null)
-						{
-							foreach (var obj in e.AdditionalObjects)
-							{
-								if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
-								{
-									try
-									{
-										if (JsonNode.Parse(File.ReadAllText(webFile.Path)) is JsonArray json)
-										{
-											var restoreNames = new JsonArray();
-											foreach (var item in json)
-											{
-												string? name = (string?)item?["name"];
-												string? path = (string?)item?["path"];
-
-												if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(path) && File.Exists(path))
-												{
-													_fileMap[name] = path;
-													restoreNames.Add(name);
-												}
-											}
-											if (restoreNames.Count > 0)
-											{
-												SendBridgeMessage(new JsonObject { ["type"] = "RESTORE_PLAYLIST", ["items"] = restoreNames }.ToJsonString());
-											}
-										}
-									}
-									catch { }
-								}
-							}
-						}
+						deferral.Complete();
 					}
+				};
 
-					// Passively extract subtitles when the HTML player loads local files natively
-					if (msg != null && msg.Contains("EXTRACT_SUBTITLES"))
-					{
-						if (e.AdditionalObjects != null)
-						{
-							// Phase 1: Synchronously map all files to ensure _fileMap is ready for SAVE_PLAYLIST
-							foreach (var obj in e.AdditionalObjects)
-							{
-								if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
-								{
-									string fileName = Path.GetFileName(webFile.Path);
-									_fileMap[fileName] = webFile.Path; // Map full path to survive session reloads
-								}
-							}
-
-							// Phase 2: Asynchronously extract subtitles without blocking file ingestion
-							_subtitleCts?.Cancel();
-							_subtitleCts?.Dispose();
-							_subtitleCts = new CancellationTokenSource();
-							var token = _subtitleCts.Token;
-
-							foreach (var obj in e.AdditionalObjects)
-							{
-								if (token.IsCancellationRequested) break;
-								if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
-								{
-									if (!webFile.Path.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
-									{
-										string videoFileName = Path.GetFileName(webFile.Path);
-										string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(webFile.Path, token);
-										if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
-										{
-											var srtPayload = new JsonObject
-											{
-												["type"] = "LOAD_SRT",
-												["videoName"] = videoFileName,
-												["srtName"] = Path.ChangeExtension(videoFileName, ".srt"),
-												["srtContent"] = extractedSrt
-											};
-											SendBridgeMessage(srtPayload.ToJsonString());
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				catch { }
-			};
-
-			// Inject the C# -> JS Bridge BEFORE index.html executes
-			string bridgeScript = @"
-                window._restoredFiles = new Set();
-
-                // 0. Intercept URL.createObjectURL to detect size-0 synthetic restored files
-                const originalCreateObjectURL = URL.createObjectURL;
-                URL.createObjectURL = function(obj) {
-                    if (obj instanceof File && obj.size === 0 && window._restoredFiles.has(obj.name)) {
-                        window.chrome.webview.postMessage(JSON.stringify({ type: 'PLAY_RESTORED', name: obj.name }));
-                        const playlistHandle = document.getElementById('playlistHandle');
-                        if (playlistHandle) playlistHandle.classList.remove('stay-visible');
-                        // Return empty base64 video to suppress HTML5 Unsupported Format error before C# pushes the actual virtual URL
-                        return 'data:video/mp4;base64,AAAA';
-                    }
-                    return originalCreateObjectURL.apply(this, arguments);
-                };
-                
-                // 1. Web Audio Mock Removed: The two-URL separation preserves VSR while allowing real GainNodes for volume boost.
-
-                // 2. NVIDIA VSR requires output resolution > native video resolution (scale > 1.0x for 1080p video).
-                window.addEventListener('DOMContentLoaded', () => {
-                    const nativeControls = document.getElementById('playlistNativeControls');
-                    if (nativeControls) nativeControls.style.display = 'flex';
-
-                    const vp = document.getElementById('videoPlayer');
-                    const slider = document.getElementById('sizeSlider');
-                    if (vp && slider) {
-                        vp.addEventListener('loadedmetadata', () => {
-                            setTimeout(() => {
-                                if (parseFloat(slider.value) <= 1.0) {
-                                    slider.value = 1.05;
-                                    slider.dispatchEvent(new Event('input'));
-                                }
-                            }, 50);
-                        });
-                    }
-
-                    const playlistList = document.getElementById('playlistList');
-                    if (playlistList) {
-                        const observer = new MutationObserver(() => {
-                            const items = Array.from(playlistList.querySelectorAll('.playlist-item-text'))
-                                               .filter(span => !span.innerText.startsWith('* '))
-                                               .map(span => span.innerText);
-                            window.chrome.webview.postMessage(JSON.stringify({ type: 'SAVE_PLAYLIST', items: items }));
-                        });
-                        observer.observe(playlistList, { childList: true, subtree: true });
-                    }
-                });
-
-                // 3. Passively listen for file selection/drop so index.html uses native 'blob:' URIs while C# extracts subtitles
-                window.addEventListener('change', (e) => {
-                    if (e.target && e.target._isRestoring) return;
-                    if (e.target && (e.target.id === 'videoFileInput' || e.target.id === 'playlistAddInput') && e.target.files.length > 0) {
-                        window.chrome.webview.postMessageWithAdditionalObjects('EXTRACT_SUBTITLES', e.target.files);
-                    }
-                }, true);
-
-                window.addEventListener('drop', (e) => {
-                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        window.chrome.webview.postMessageWithAdditionalObjects('EXTRACT_SUBTITLES', e.dataTransfer.files);
-                    }
-                }, true);
-
-                window.chrome.webview.addEventListener('message', event => {
-                    const msg = JSON.parse(event.data);
-
-                    if (msg.type === 'RESTORE_PLAYLIST') {
-                        const dt = new DataTransfer();
-                        msg.items.forEach(itemName => {
-                            dt.items.add(new File([''], itemName, { type: 'video/mp4' }));
-                            window._restoredFiles.add(itemName);
-                        });
-                        const input = document.getElementById('playlistAddInput');
-                        if (input && dt.items.length > 0) {
-                            input._isRestoring = true;
-                            input.files = dt.files;
-                            input.dispatchEvent(new Event('change'));
-                            input._isRestoring = false;
-                        }
-                    }
-
-                    if (msg.type === 'LOAD_MEDIA') {
-                        // Original C# launch support for App.xaml.cs double-click activation
-                        filenameDisplay.innerText = msg.fileName;
-                        removeManualTrack();
-                        previousSubSelection = null;
-                        cropControls.style.display = 'none';
-                        cropTop.value = 0; cropBottom.value = 0; cropLeft.value = 0; cropRight.value = 0;
-                        applyVideoCrop();
-
-                        subSelect.innerHTML = '';
-                        subSelect.value = '';
-                        subSelect.style.display = 'none';
-                        btnSubtitles.style.display = 'block';
-                        seekSlider.disabled = true;
-                        seekSlider.value = 0;
-                        timeDisplay.innerText = '0:00 / 0:00';
-
-                        playOverlay.classList.remove('ready');
-                        playOverlay.classList.add('visible');
-                        overlayContent.innerHTML = '<div class=""spinner""></div><div class=""play-text"">Loading video...</div>';
-
-                        if (currentVideoUrl) {
-                            URL.revokeObjectURL(currentVideoUrl);
-                            currentVideoUrl = null;
-                        }
-                        if (currentAudioUrl) {
-                            URL.revokeObjectURL(currentAudioUrl);
-                            currentAudioUrl = null;
-                        }
-
-                        videoPlayer.src = msg.videoUrl;
-                        audioPlayer.src = msg.audioUrl;
-                        isFirstFrame = true;
-
-                        if (!audioCtx) initAudio();
-                        if (audioCtx && audioCtx.state === 'suspended') {
-                            audioCtx.resume().catch(() => {});
-                        }
-
-                        videoPlayer.load();
-                        audioPlayer.load();
-                    }
-
-                    if (msg.type === 'LOAD_SRT' && msg.srtContent) {
-                        const blob = new Blob([msg.srtContent], { type: 'text/plain' });
-                        const syntheticFile = new File([blob], msg.srtName || 'embedded.srt', { type: 'text/plain' });
-
-                        if (msg.videoName && typeof playlistFiles !== 'undefined') {
-                            const matchedItem = playlistFiles.find(f => f.name === msg.videoName);
-                            if (matchedItem && !matchedItem.pairedSrt) {
-                                matchedItem.pairedSrt = syntheticFile;
-                                if (typeof renderPlaylist === 'function') renderPlaylist();
-                            }
-                        }
-
-                        if (!msg.videoName || filenameDisplay.innerText === msg.videoName) {
-                            const applyIfStillCurrent = () => {
-                                if (!msg.videoName || filenameDisplay.innerText === msg.videoName) {
-                                    loadSrt(syntheticFile);
-                                }
-                            };
-                            if (videoPlayer.readyState >= 1) {
-                                applyIfStillCurrent();
-                            } else {
-                                videoPlayer.addEventListener('loadedmetadata', applyIfStillCurrent, { once: true });
-                            }
-                        }
-                    }
-                });
-            ";
-
-			await coreWv.AddScriptToExecuteOnDocumentCreatedAsync(bridgeScript);
-
-			coreWv.NavigationCompleted += async (s, e) =>
-			{
-				_isPageReady = true;
-
-				if (File.Exists(_playlistFile))
+				// Handle messages from JS
+				coreWv.WebMessageReceived += async (s, e) =>
 				{
 					try
 					{
-						if (JsonNode.Parse(File.ReadAllText(_playlistFile)) is JsonArray json)
+						string msg = e.TryGetWebMessageAsString();
+						if (msg != null && msg.StartsWith("LOG:"))
 						{
-							var restoreNames = new JsonArray();
-							foreach (var item in json)
-							{
-								string? name = (string?)item?["name"];
-								string? path = (string?)item?["path"];
+							App.Log($"[JS Bridge] {msg.Substring(4)}");
+							return;
+						}
 
-								if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(path) && File.Exists(path))
+						if (msg != null && msg.Contains("\"type\":\"SAVE_PLAYLIST\""))
+						{
+							if (JsonNode.Parse(msg)?["items"] is JsonArray items)
+							{
+								var saveArray = new JsonArray();
+								foreach (var item in items)
 								{
-									_fileMap[name] = path;
-									restoreNames.Add(name);
+									string? name = (string?)item;
+									if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
+									{
+										saveArray.Add(new JsonObject { ["name"] = name, ["path"] = fullPath });
+									}
+								}
+								Directory.CreateDirectory(Path.GetDirectoryName(_playlistFile)!);
+								await File.WriteAllTextAsync(_playlistFile, saveArray.ToJsonString());
+							}
+						}
+
+						if (msg != null && msg.Contains("\"type\":\"PLAY_RESTORED\""))
+						{
+							string? name = (string?)JsonNode.Parse(msg)?["name"];
+							if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
+							{
+								_ = ProcessExternalFileAsync(fullPath);
+							}
+						}
+
+						if (msg != null && msg.Contains("\"type\":\"EXPORT_PLAYLIST\""))
+						{
+							if (JsonNode.Parse(msg)?["items"] is JsonArray items)
+							{
+								var saveArray = new JsonArray();
+								foreach (var item in items)
+								{
+									string? name = (string?)item;
+									if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
+									{
+										saveArray.Add(new JsonObject { ["name"] = name, ["path"] = fullPath });
+									}
+								}
+
+								var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+								var savePicker = new Windows.Storage.Pickers.FileSavePicker();
+								WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
+								savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+								savePicker.FileTypeChoices.Add("JSON Playlist", new List<string>() { ".json" });
+								savePicker.SuggestedFileName = "SSVid_Playlist";
+
+								var file = await savePicker.PickSaveFileAsync();
+								if (file != null)
+								{
+									await Windows.Storage.FileIO.WriteTextAsync(file, saveArray.ToJsonString());
 								}
 							}
-							if (restoreNames.Count > 0)
+						}
+
+						if (msg != null && msg.Contains("IMPORT_PLAYLIST"))
+						{
+							if (e.AdditionalObjects != null)
 							{
-								SendBridgeMessage(new JsonObject { ["type"] = "RESTORE_PLAYLIST", ["items"] = restoreNames }.ToJsonString());
+								foreach (var obj in e.AdditionalObjects)
+								{
+									if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
+									{
+										try
+										{
+											if (JsonNode.Parse(File.ReadAllText(webFile.Path)) is JsonArray json)
+											{
+												var restoreNames = new JsonArray();
+												foreach (var item in json)
+												{
+													string? name = (string?)item?["name"];
+													string? path = (string?)item?["path"];
+
+													if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(path) && File.Exists(path))
+													{
+														_fileMap[name] = path;
+														restoreNames.Add(name);
+													}
+												}
+												if (restoreNames.Count > 0)
+												{
+													SendBridgeMessage(new JsonObject { ["type"] = "RESTORE_PLAYLIST", ["items"] = restoreNames }.ToJsonString());
+												}
+											}
+										}
+										catch { }
+									}
+								}
+							}
+						}
+
+						// Passively extract subtitles when the HTML player loads local files natively
+						if (msg != null && msg.Contains("EXTRACT_SUBTITLES"))
+						{
+							if (e.AdditionalObjects != null)
+							{
+								foreach (var obj in e.AdditionalObjects)
+								{
+									if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
+									{
+										string fileName = Path.GetFileName(webFile.Path);
+										_fileMap[fileName] = webFile.Path;
+									}
+								}
+
+								_subtitleCts?.Cancel();
+								_subtitleCts?.Dispose();
+								_subtitleCts = new CancellationTokenSource();
+								var token = _subtitleCts.Token;
+
+								foreach (var obj in e.AdditionalObjects)
+								{
+									if (token.IsCancellationRequested) break;
+									if (obj is CoreWebView2File webFile && !string.IsNullOrEmpty(webFile.Path))
+									{
+										if (!webFile.Path.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
+										{
+											string videoFileName = Path.GetFileName(webFile.Path);
+											string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(webFile.Path, token);
+											if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
+											{
+												var srtPayload = new JsonObject
+												{
+													["type"] = "LOAD_SRT",
+													["videoName"] = videoFileName,
+													["srtName"] = Path.ChangeExtension(videoFileName, ".srt"),
+													["srtContent"] = extractedSrt
+												};
+												SendBridgeMessage(srtPayload.ToJsonString());
+											}
+										}
+									}
+								}
 							}
 						}
 					}
 					catch { }
-				}
-
-				if (!string.IsNullOrEmpty(_pendingFilePath))
-				{
-					string path = _pendingFilePath;
-					_pendingFilePath = null;
-					await ProcessExternalFileAsync(path);
-				}
-			};
+				};
 
 				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
 				PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html?isNative=1");
@@ -467,13 +468,17 @@ namespace SSVidPlayer
 
 		public async Task ProcessExternalFileAsync(string filePath)
 		{
-			if (!File.Exists(filePath)) return;
+			App.Log($"[PROCESS] Initiating processing for: {filePath}");
+			if (!File.Exists(filePath))
+			{
+				App.Log($"[PROCESS ERROR] File does not exist at path: {filePath}");
+				return;
+			}
 
-			var coreWv = PlayerWebView.CoreWebView2;
 			string ext = Path.GetExtension(filePath).ToLowerInvariant();
 			string fileName = Path.GetFileName(filePath);
+			App.Log($"[PROCESS] Extension: {ext} | FileName: {fileName}");
 
-			// If the user double-clicked a standalone .srt file while a video is open
 			if (ext == ".srt")
 			{
 				string srtText = await File.ReadAllTextAsync(filePath);
@@ -487,27 +492,15 @@ namespace SSVidPlayer
 				return;
 			}
 
-			// Map the directory of the opened media file so WebView2 can stream it directly with zero copy
-			// We map TWO distinct virtual hostnames to the exact same folder. 
-			// This forces Chromium to treat the video and audio streams as separate cross-origin resources,
-			// guaranteeing two isolated media pipelines so WebAudio does not disable the VSR hardware overlay.
-			string folderPath = Path.GetDirectoryName(filePath)!;
-			coreWv.SetVirtualHostNameToFolderMapping(
-				"video.ssvidplayer",
-				folderPath,
-				CoreWebView2HostResourceAccessKind.Allow
-			);
-			coreWv.SetVirtualHostNameToFolderMapping(
-				"audio.ssvidplayer",
-				folderPath,
-				CoreWebView2HostResourceAccessKind.Allow
-			);
-
+			_fileMap[fileName] = filePath;
 			string encodedFileName = Uri.EscapeDataString(fileName);
-			string virtualVideoUrl = $"https://video.ssvidplayer/{encodedFileName}";
-			string virtualAudioUrl = $"https://audio.ssvidplayer/{encodedFileName}";
+			string cacheBuster = "?t=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-			// 1. Tell the player to load the video & audio streams
+			string virtualVideoUrl = $"https://video.ssvidplayer/{encodedFileName}{cacheBuster}";
+			string virtualAudioUrl = $"https://audio.ssvidplayer/{encodedFileName}{cacheBuster}";
+
+			App.Log($"[PROCESS] Generated URLs: {virtualVideoUrl} | {virtualAudioUrl}");
+
 			var mediaPayload = new JsonObject
 			{
 				["type"] = "LOAD_MEDIA",
@@ -515,9 +508,9 @@ namespace SSVidPlayer
 				["videoUrl"] = virtualVideoUrl,
 				["audioUrl"] = virtualAudioUrl
 			};
+			App.Log($"[PROCESS] Sending payload: {mediaPayload.ToJsonString()}");
 			SendBridgeMessage(mediaPayload.ToJsonString());
 
-			// 2. Demux embedded subtitles (or companion .srt) in the background and inject into loadSrt(file)
 			_subtitleCts?.Cancel();
 			_subtitleCts?.Dispose();
 			_subtitleCts = new CancellationTokenSource();
