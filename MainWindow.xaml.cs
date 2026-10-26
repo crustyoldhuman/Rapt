@@ -45,10 +45,29 @@ namespace SSVidPlayer
 			titleBar.ButtonInactiveForegroundColor = Colors.Gray;
 
 			PlayerWebView.AllowDrop = true;
+			PlayerWebView.DragEnter += PlayerWebView_DragEnter;
 			PlayerWebView.DragOver += PlayerWebView_DragOver;
 			PlayerWebView.Drop += PlayerWebView_Drop;
 
+			DragOverlay.DragLeave += DragOverlay_DragLeave;
+			DragOverlay.DragOver += PlayerWebView_DragOver;
+			DragOverlay.Drop += PlayerWebView_Drop;
+
 			InitializeWebViewAsync();
+		}
+
+		private void PlayerWebView_DragEnter(object sender, Microsoft.UI.Xaml.DragEventArgs e)
+		{
+			DragOverlay.Visibility = Visibility.Visible;
+			if (PlayerWebView.CoreWebView2 != null)
+				SendBridgeMessage("{\"type\":\"DRAG_ENTER\"}");
+		}
+
+		private void DragOverlay_DragLeave(object sender, Microsoft.UI.Xaml.DragEventArgs e)
+		{
+			DragOverlay.Visibility = Visibility.Collapsed;
+			if (PlayerWebView.CoreWebView2 != null)
+				SendBridgeMessage("{\"type\":\"DRAG_LEAVE\"}");
 		}
 
 		private void PlayerWebView_DragOver(object sender, Microsoft.UI.Xaml.DragEventArgs e)
@@ -63,10 +82,8 @@ namespace SSVidPlayer
 
 		private async void PlayerWebView_Drop(object sender, Microsoft.UI.Xaml.DragEventArgs e)
 		{
-			App.Log("[DROP] Drop event initiated.");
 			var deferral = e.GetDeferral();
-			var mediaPaths = new List<string>();
-			string? srtPath = null;
+			var droppedFiles = new JsonArray();
 
 			try
 			{
@@ -80,56 +97,102 @@ namespace SSVidPlayer
 							if (item is Windows.Storage.StorageFile file)
 							{
 								_fileMap[file.Name] = file.Path;
-								if (file.Name.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
+								string ext = Path.GetExtension(file.Name).ToLowerInvariant();
+
+								if (ext == ".srt")
 								{
-									srtPath = file.Path;
+									string srtContent = await File.ReadAllTextAsync(file.Path);
+									droppedFiles.Add(new JsonObject
+									{
+										["name"] = file.Name,
+										["type"] = "text/plain",
+										["srtContent"] = srtContent
+									});
 								}
 								else
 								{
-									mediaPaths.Add(file.Path);
+									string mimeType = "application/octet-stream";
+									if (ext == ".mp4") mimeType = "video/mp4";
+									else if (ext == ".webm") mimeType = "video/webm";
+									else if (ext == ".mkv") mimeType = "video/x-matroska";
+									else if (ext == ".mp3") mimeType = "audio/mpeg";
+									else if (ext == ".wav") mimeType = "audio/wav";
+									else if (ext == ".ogg") mimeType = "audio/ogg";
+									else if (ext == ".flac") mimeType = "audio/flac";
+
+									string encodedFileName = Uri.EscapeDataString(file.Name);
+									string cacheBuster = "?t=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+									droppedFiles.Add(new JsonObject
+									{
+										["name"] = file.Name,
+										["type"] = mimeType,
+										["isVirtual"] = true,
+										["videoUrl"] = $"https://video.ssvidplayer/{encodedFileName}{cacheBuster}",
+										["audioUrl"] = $"https://audio.ssvidplayer/{encodedFileName}{cacheBuster}"
+									});
 								}
 							}
 						}
 					}
 				}
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				App.Log($"[DROP EXCEPTION] {ex.Message}");
 			}
 			finally
 			{
 				e.Handled = true;
 				deferral.Complete();
+				DragOverlay.Visibility = Visibility.Collapsed;
+				if (PlayerWebView.CoreWebView2 != null)
+					SendBridgeMessage("{\"type\":\"DRAG_LEAVE\"}");
 			}
 
-			// Force garbage collection to release OS file locks held by the Drag & Drop COM wrappers
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
 			await Task.Delay(100);
 
-			if (mediaPaths.Count > 0)
+			if (droppedFiles.Count > 0)
 			{
-				if (mediaPaths.Count > 1)
+				var payload = new JsonObject
 				{
-					var restoreNames = new JsonArray();
-					foreach (var path in mediaPaths)
+					["type"] = "BATCH_PROCESS_FILES",
+					["files"] = droppedFiles
+				};
+				SendBridgeMessage(payload.ToJsonString());
+
+				string? firstVideoName = null;
+				foreach (var f in droppedFiles)
+				{
+					string fn = f?["name"]?.ToString() ?? "";
+					if (!fn.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
 					{
-						restoreNames.Add(Path.GetFileName(path));
+						firstVideoName = fn;
+						break;
 					}
-					SendBridgeMessage(new JsonObject { ["type"] = "RESTORE_PLAYLIST", ["items"] = restoreNames }.ToJsonString());
 				}
 
-				await ProcessExternalFileAsync(mediaPaths[0]);
-
-				if (srtPath != null)
+				if (firstVideoName != null && _fileMap.TryGetValue(firstVideoName, out string? videoPath))
 				{
-					await ProcessExternalFileAsync(srtPath);
+					_subtitleCts?.Cancel();
+					_subtitleCts?.Dispose();
+					_subtitleCts = new CancellationTokenSource();
+					var token = _subtitleCts.Token;
+
+					string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(videoPath, token);
+					if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
+					{
+						var srtPayload = new JsonObject
+						{
+							["type"] = "LOAD_SRT",
+							["videoName"] = firstVideoName,
+							["srtName"] = Path.ChangeExtension(firstVideoName, ".srt"),
+							["srtContent"] = extractedSrt
+						};
+						SendBridgeMessage(srtPayload.ToJsonString());
+					}
 				}
-			}
-			else if (srtPath != null)
-			{
-				await ProcessExternalFileAsync(srtPath);
 			}
 		}
 
@@ -218,19 +281,19 @@ namespace SSVidPlayer
 
 						if (_fileMap.TryGetValue(fileName, out string? fullPath) && File.Exists(fullPath))
 						{
-							string ext = Path.GetExtension(fullPath).ToLowerInvariant();
+							string ext = Path.GetExtension(fullPath);
 							string mimeType = "application/octet-stream";
 
-							if (ext == ".mp4") mimeType = "video/mp4";
-							else if (ext == ".webm") mimeType = "video/webm";
-							else if (ext == ".mkv") mimeType = "video/x-matroska";
-							else if (ext == ".mp3") mimeType = "audio/mpeg";
-							else if (ext == ".wav") mimeType = "audio/wav";
-							else if (ext == ".ogg") mimeType = "audio/ogg";
-							else if (ext == ".flac") mimeType = "audio/flac";
+							if (ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase)) mimeType = "video/mp4";
+							else if (ext.Equals(".webm", StringComparison.OrdinalIgnoreCase)) mimeType = "video/webm";
+							else if (ext.Equals(".mkv", StringComparison.OrdinalIgnoreCase)) mimeType = "video/x-matroska";
+							else if (ext.Equals(".mp3", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/mpeg";
+							else if (ext.Equals(".wav", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/wav";
+							else if (ext.Equals(".ogg", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/ogg";
+							else if (ext.Equals(".flac", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/flac";
 
 							// Use standard FileStream to allow concurrent FileAccess.Read bypassing WinRT locking overhead
-							var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+							using var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous);
 
 							ulong totalSize = (ulong)fs.Length;
 							ulong start = 0;
@@ -248,12 +311,20 @@ namespace SSVidPlayer
 							}
 							catch { }
 
+							const ulong maxChunkSize = 2 * 1024 * 1024; // 2 MB chunk cap to prevent full-file RAM buffering
+
 							if (!string.IsNullOrEmpty(rangeHeader) && rangeHeader.StartsWith("bytes="))
 							{
-								var range = rangeHeader.Substring(6).Split('-');
+								var range = rangeHeader[6..].Split('-');
 								if (ulong.TryParse(range[0], out ulong sVal)) start = sVal;
-								if (range.Length > 1 && ulong.TryParse(range[1], out ulong eVal)) end = eVal;
-								else end = totalSize - 1;
+								if (range.Length > 1 && ulong.TryParse(range[1], out ulong eVal))
+								{
+									end = Math.Min(eVal, totalSize - 1);
+								}
+								else
+								{
+									end = Math.Min(start + maxChunkSize - 1, totalSize - 1);
+								}
 
 								statusCode = 206;
 								statusText = "Partial Content";
@@ -267,13 +338,18 @@ namespace SSVidPlayer
 							{
 								byte[] buffer = new byte[length];
 								fs.Seek((long)start, SeekOrigin.Begin);
-								await fs.ReadAsync(buffer, 0, (int)length);
+								int totalRead = 0;
+								while (totalRead < (int)length)
+								{
+									int bytesRead = await fs.ReadAsync(buffer.AsMemory(totalRead, (int)length - totalRead));
+									if (bytesRead == 0) break;
+									totalRead += bytesRead;
+								}
 								dataWriter.WriteBytes(buffer);
 								await dataWriter.StoreAsync();
 								await dataWriter.FlushAsync();
 								dataWriter.DetachStream();
 							}
-							fs.Dispose();
 							memoryStream.Seek(0);
 
 							// Expose the precise byte ranges Chromium requested so it does not pause the stream engine
@@ -295,9 +371,8 @@ namespace SSVidPlayer
 							e.Response = coreWv.Environment.CreateWebResourceResponse(null, 404, "Not Found", "");
 						}
 					}
-					catch (Exception ex)
+					catch (Exception)
 					{
-						App.Log($"[WebResourceRequested ERROR] {ex.Message}");
 					}
 					finally
 					{
@@ -313,7 +388,6 @@ namespace SSVidPlayer
 						string msg = e.TryGetWebMessageAsString();
 						if (msg != null && msg.StartsWith("LOG:"))
 						{
-							App.Log($"[JS Bridge] {msg.Substring(4)}");
 							return;
 						}
 
@@ -362,7 +436,7 @@ namespace SSVidPlayer
 								var savePicker = new Windows.Storage.Pickers.FileSavePicker();
 								WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
 								savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-								savePicker.FileTypeChoices.Add("JSON Playlist", new List<string>() { ".json" });
+								savePicker.FileTypeChoices.Add("JSON Playlist", [".json"]);
 								savePicker.SuggestedFileName = "SSVid_Playlist";
 
 								var file = await savePicker.PickSaveFileAsync();
@@ -460,24 +534,20 @@ namespace SSVidPlayer
 				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
 				PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html?isNative=1");
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				System.Diagnostics.Debug.WriteLine($"[WebView2 Init Error] {ex.Message}");
 			}
 		}
 
 		public async Task ProcessExternalFileAsync(string filePath)
 		{
-			App.Log($"[PROCESS] Initiating processing for: {filePath}");
 			if (!File.Exists(filePath))
 			{
-				App.Log($"[PROCESS ERROR] File does not exist at path: {filePath}");
 				return;
 			}
 
 			string ext = Path.GetExtension(filePath).ToLowerInvariant();
 			string fileName = Path.GetFileName(filePath);
-			App.Log($"[PROCESS] Extension: {ext} | FileName: {fileName}");
 
 			if (ext == ".srt")
 			{
@@ -499,8 +569,6 @@ namespace SSVidPlayer
 			string virtualVideoUrl = $"https://video.ssvidplayer/{encodedFileName}{cacheBuster}";
 			string virtualAudioUrl = $"https://audio.ssvidplayer/{encodedFileName}{cacheBuster}";
 
-			App.Log($"[PROCESS] Generated URLs: {virtualVideoUrl} | {virtualAudioUrl}");
-
 			var mediaPayload = new JsonObject
 			{
 				["type"] = "LOAD_MEDIA",
@@ -508,7 +576,6 @@ namespace SSVidPlayer
 				["videoUrl"] = virtualVideoUrl,
 				["audioUrl"] = virtualAudioUrl
 			};
-			App.Log($"[PROCESS] Sending payload: {mediaPayload.ToJsonString()}");
 			SendBridgeMessage(mediaPayload.ToJsonString());
 
 			_subtitleCts?.Cancel();

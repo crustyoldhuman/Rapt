@@ -27,5 +27,8 @@
 		</Grid>
 
 		<WebView2 x:Name="PlayerWebView" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+		<!-- XAML Drag Overlay to prevent WinUI 3 WebView2 compositor glitch -->
+		<Grid x:Name="DragOverlay" Grid.Row="1" Background="Transparent" AllowDrop="True" Visibility="Collapsed" />
 	</Grid>
 </Window>

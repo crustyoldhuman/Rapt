@@ -172,6 +172,7 @@
         }
         input[type="number"].no-spinners {
             -moz-appearance: textfield;
+            appearance: textfield;
         }
         div[id$="Up"] svg {
             transform: translateY(2.5px);
@@ -261,6 +262,22 @@
             }
             #ambientCanvas.hidden {
                 opacity: 0;
+            }
+
+            #visualizerCanvas {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 60%;
+                height: 30%;
+                z-index: 5;
+                pointer-events: none;
+                transition: opacity 0.5s ease, visibility 0.5s ease;
+            }
+            #visualizerCanvas.hidden {
+                opacity: 0;
+                visibility: hidden;
             }
 
             .play-overlay {
@@ -881,11 +898,12 @@
         </div>
 
         <canvas id="ambientCanvas" class="hidden"></canvas>
+        <canvas id="visualizerCanvas" class="hidden"></canvas>
 
-        <video width="640" id="videoPlayer" muted>
+        <video width="640" id="videoPlayer" crossorigin="anonymous" muted>
             Your browser does not support the video tag.
         </video>
-        <audio id="audioPlayer" style="display: none;"></audio>
+        <audio id="audioPlayer" crossorigin="anonymous" style="display: none;"></audio>
 
         <div id="playbackIndicator" class="playback-indicator">
             <svg id="indicatorPlay" style="display: none; margin-left: 6px;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -1016,6 +1034,7 @@
             let selectedPlaylistIndex = -1;
             let currentPlayIndex = -1;
             let draggedItemIndex = null;
+            let allowNextVideoAutoplay = false;
 
             const subStyle = document.createElement('style');
             document.head.appendChild(subStyle);
@@ -1039,6 +1058,11 @@
             const glowSlider = document.getElementById('glowSlider');
             const ambientCanvas = document.getElementById('ambientCanvas');
             const ambientCtx = ambientCanvas.getContext('2d', { alpha: false });
+            
+            const visualizerCanvas = document.getElementById('visualizerCanvas');
+            const visualizerCtx = visualizerCanvas.getContext('2d');
+            let analyser, dataArray, visAnimId;
+            let isAudioFile = false;
 
             let isAmbientEnabled = false;
             let isFirstFrame = true;
@@ -1441,6 +1465,8 @@
             let srtFile = newSrts.length > 0 ? newSrts[0] : null;
 
             if (videoFile) {
+            isAudioFile = videoFile.type.startsWith('audio/') || !!videoFile.name.match(/\.(mp3|wav|ogg|flac|m4a|aac)$/i);
+            visualizerCanvas.classList.add('hidden');
             // DISABLED WEB AUDIO:
             // createMediaElementSource breaks hardware overlays in Chromium, killing VSR.
             // if (!isFirefox) {
@@ -1471,20 +1497,30 @@
             <div class="play-text">Loading video...</div>
             `;
 
-            if (currentVideoUrl) {
+            if (currentVideoUrl && currentVideoUrl.startsWith('blob:')) {
             URL.revokeObjectURL(currentVideoUrl);
+            }
             currentVideoUrl = null;
-            }
-            if (currentAudioUrl) {
+            if (currentAudioUrl && currentAudioUrl.startsWith('blob:')) {
             URL.revokeObjectURL(currentAudioUrl);
+            }
             currentAudioUrl = null;
+
+            if (videoFile.isVirtual) {
+                // Use the C# Virtual Host mappings for DragOverlay drop support
+                currentVideoUrl = videoFile.videoUrl;
+                currentAudioUrl = videoFile.audioUrl;
+            } else {
+                // THE VSR FIX: Generate two distinct URLs so Chromium spins up isolated media pipelines.
+                // The video pipeline stays hardware-accelerated (VSR), while the audio pipeline gets hooked for volume.
+                currentVideoUrl = URL.createObjectURL(videoFile);
+                currentAudioUrl = URL.createObjectURL(videoFile);
             }
 
-            // THE VSR FIX: Generate two distinct URLs so Chromium spins up isolated media pipelines.
-            // The video pipeline stays hardware-accelerated (VSR), while the audio pipeline gets hooked for volume.
-            currentVideoUrl = URL.createObjectURL(videoFile);
-            currentAudioUrl = URL.createObjectURL(videoFile);
-
+            videoPlayer._isReadyHandled = false;
+            videoPlayer._hasStartedPlaying = false;
+            videoPlayer.style.opacity = '0';
+            customSubContainer.style.opacity = '0';
             videoPlayer.src = currentVideoUrl;
             audioPlayer.src = currentAudioUrl;
 
@@ -1499,6 +1535,11 @@
 
             videoPlayer.load();
             audioPlayer.load();
+            
+            if (allowNextVideoAutoplay) {
+                videoPlayer.play().catch(() => {});
+                audioPlayer.play().catch(() => {});
+            }
             } else if (srtFile && videoPlayer.src) {
             loadSrt(srtFile);
             } else {
@@ -1676,16 +1717,19 @@
             event.dataTransfer.dropEffect = 'move';
             return;
             }
+            if (window.chrome && window.chrome.webview) return;
             if (event.dataTransfer.types && event.dataTransfer.types.includes("Files")) {
             document.body.classList.add('drag-over');
             }
             });
             window.addEventListener('dragleave', function(event) {
             event.preventDefault();
+            if (window.chrome && window.chrome.webview) return;
             document.body.classList.remove('drag-over');
             });
             window.addEventListener('drop', function(event) {
             event.preventDefault();
+            if (window.chrome && window.chrome.webview) return;
             document.body.classList.remove('drag-over');
             if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
             videoFileInput.files = event.dataTransfer.files;
@@ -1694,7 +1738,12 @@
             });
 
             function handleMediaReady() {
+            if (videoPlayer.readyState === 0) return;
+            if (videoPlayer._isReadyHandled) return;
+            videoPlayer._isReadyHandled = true;
+
             seekSlider.disabled = false;
+            timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
             nativeWidth = videoPlayer.videoWidth || 640;
             nativeHeight = videoPlayer.videoHeight || 360;
 
@@ -1722,24 +1771,34 @@
             videoPlayer.removeAttribute('controls');
 
             overlayContent.innerHTML = `
+            <div id="overlayFilename" style="font-size: 14px; margin-bottom: 10px; font-weight: normal; opacity: 0.99; word-break: break-all; max-width: 95%;"></div>
             <div class="play-icon">&#9658;</div>
             <div class="play-text">Click or press space to play</div>
             `;
+            document.getElementById('overlayFilename').textContent = filenameDisplay.textContent;
             playOverlay.classList.add('ready');
-            playOverlay.classList.add('visible');
+            
+            if (videoPlayer.paused) {
+                playOverlay.classList.add('visible');
+            }
 
             manageAmbientState();
 
-            // Try to autoplay both video and audio. If audio is blocked by Firefox, pause video and show overlay.
-            const startPlayback = async () => {
-            try {
-            if (!audioCtx) initAudio();
-            if (audioCtx.state === 'suspended') {
-            await audioCtx.resume();
-            }
-            await audioPlayer.play();
-            await videoPlayer.play();
-            } catch (error) {
+            // Try to autoplay audio. If video is present or audio is blocked, pause and show overlay.
+            const startPlayback = () => {
+                try {
+                    if (!audioCtx) initAudio();
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume().catch(() => {});
+                    }
+                    if (videoPlayer.videoWidth > 0 && !allowNextVideoAutoplay) {
+                        throw new Error("Autoplay disabled for video files");
+                    }
+                    allowNextVideoAutoplay = false;
+                    audioPlayer.play().catch(() => {});
+                    videoPlayer.play().catch(() => {});
+                } catch (error) {
+            allowNextVideoAutoplay = false;
             videoPlayer.pause();
             audioPlayer.pause();
             clearTimeout(indicatorTimeout);
@@ -1766,36 +1825,37 @@
 
             const source = audioCtx.createMediaElementSource(audioPlayer);
             gainNode = audioCtx.createGain();
+            analyser = audioCtx.createAnalyser();
+            // Quadruple frequency resolution (approx 5.3 Hz per bin) to give bass more dedicated bars
+            analyser.fftSize = 8192;
+            analyser.minDecibels = -95;
+            analyser.maxDecibels = -15;
+            analyser.smoothingTimeConstant = 0.93; // Increased to smooth out rapid bar vibrations
 
             gainNode.gain.value = parseFloat(volumeSlider.value);
 
             source.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
+            gainNode.connect(analyser);
+            analyser.connect(audioCtx.destination);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
             }
 
-            function logState(msg) {
-                if (window.chrome && window.chrome.webview) {
-                    window.chrome.webview.postMessage('LOG: [STATE] ' + msg);
-                }
-            }
-
             videoPlayer.addEventListener('ended', function() {
-            logState('Video ended.');
             if (loopMode === 1) return;
 
             if (currentPlayIndex > -1) {
             if (currentPlayIndex + 1 < playlistFiles.length) {
+            allowNextVideoAutoplay = true;
             playPlaylistItem(currentPlayIndex + 1);
             } else if (loopMode === 2 && playlistFiles.length > 0) {
+            allowNextVideoAutoplay = true;
             playPlaylistItem(0);
             }
             }
             });
 
             videoPlayer.addEventListener('waiting', function() {
-            logState('Video waiting (buffering stream). Auto-pausing audio to maintain sync.');
             if (!audioPlayer.paused && videoPlayer.videoWidth > 0) {
                 audioPlayer._isBufferingPause = true;
                 audioPlayer.pause();
@@ -1803,7 +1863,6 @@
             });
 
             videoPlayer.addEventListener('playing', function() {
-            logState('Video playing. Resuming audio.');
             if (audioPlayer.paused && !videoPlayer.paused) {
             audioPlayer.currentTime = videoPlayer.currentTime;
             audioPlayer.play().catch(() => {});
@@ -1822,6 +1881,7 @@
             playOverlay.classList.remove('ready');
             playOverlay.classList.add('visible');
             ambientCanvas.classList.add('hidden');
+            visualizerCanvas.classList.add('hidden');
             overlayContent.innerHTML = `
             <div class="play-text" style="color: #ff5555;">Unsupported Format</div>
             <div style="font-size: 14px; margin-top: 10px;">Your browser cannot play this file. Try an MP4 or WebM.</div>
@@ -1830,17 +1890,17 @@
 
             function manageAmbientState() {
             cancelAnimationFrame(ambientAnimId);
-            if (!isAmbientEnabled) {
-            ambientCanvas.classList.add('hidden');
-            ambientCanvas.style.opacity = '';
-            } else if (videoPlayer.readyState > 0) {
-            ambientCanvas.classList.remove('hidden');
-            ambientCanvas.style.opacity = glowSlider.value / 100;
-            isFirstFrame = true;
-            drawAmbientFrame();
-            if (!videoPlayer.paused) {
-            drawAmbientLoop();
-            }
+            if (!isAmbientEnabled || !videoPlayer._hasStartedPlaying) {
+                ambientCanvas.classList.add('hidden');
+                ambientCanvas.style.opacity = '';
+            } else if (isAudioFile ? audioPlayer.readyState > 0 : videoPlayer.readyState > 0) {
+                ambientCanvas.classList.remove('hidden');
+                ambientCanvas.style.opacity = glowSlider.value / 100;
+                isFirstFrame = true;
+                drawAmbientFrame();
+                if (!videoPlayer.paused) {
+                    drawAmbientLoop();
+                }
             }
             }
 
@@ -1855,10 +1915,134 @@
             window.addEventListener('resize', resizeAmbientCanvas);
             resizeAmbientCanvas();
 
-            function drawAmbientFrame() {
-            if (!nativeWidth || !nativeHeight || videoPlayer.readyState === 0) return;
+            function resizeVisualizer() {
+                visualizerCanvas.width = visualizerCanvas.clientWidth;
+                visualizerCanvas.height = visualizerCanvas.clientHeight;
+            }
+            window.addEventListener('resize', resizeVisualizer);
 
-            const cropTopPx = parseFloat(cropTop.value) || 0;
+            function drawVisualizer() {
+                if (!isAudioFile || videoPlayer.paused || !analyser) return;
+                visAnimId = requestAnimationFrame(drawVisualizer);
+
+                const bufferLength = analyser.frequencyBinCount;
+                if (!dataArray || dataArray.length !== bufferLength) {
+                    dataArray = new Uint8Array(bufferLength);
+                }
+                analyser.getByteFrequencyData(dataArray);
+
+                visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+                
+                const numBars = 120; // Fixed bar distribution across the full width
+                const barWidth = visualizerCanvas.width / numBars;
+                let x = 0;
+
+                let currentPeak = 10;
+                for (let b = bufferLength - 1; b >= 0; b--) {
+                    if (dataArray[b] > 0) {
+                        currentPeak = b;
+                        break;
+                    }
+                }
+                
+                // Track highest bin seen to dynamically stretch the spectrum (auto-zooms through low-pass filters)
+                if (!visualizerCanvas._highestActiveBin) visualizerCanvas._highestActiveBin = Math.floor(bufferLength * 0.3);
+                if (currentPeak > visualizerCanvas._highestActiveBin) {
+                    visualizerCanvas._highestActiveBin = currentPeak;
+                } else {
+                    visualizerCanvas._highestActiveBin -= 0.5; // Smooth decay
+                }
+
+                // Increased minBin to 6 to account for the new higher resolution bins (skipping ~0-32Hz inaudible rumble)
+                const minBin = 6; 
+                const maxBin = Math.max(Math.floor(bufferLength * 0.15), Math.floor(visualizerCanvas._highestActiveBin)); 
+                
+                let nextBin = minBin;
+
+                for(let i = 0; i < numBars; i++) {
+                    const currentBin = nextBin;
+                    nextBin = Math.floor(minBin * Math.pow(maxBin / minBin, (i + 1) / numBars));
+                    if (nextBin <= currentBin) nextBin = currentBin + 1;
+                    
+                    // Average-pooling: smooths out noise spikes to prevent rapid vibrating, especially in boosted treble bands
+                    let sumVal = 0;
+                    let binCount = 0;
+                    for (let b = currentBin; b < nextBin && b < bufferLength; b++) {
+                        sumVal += dataArray[b];
+                        binCount++;
+                    }
+                    let avgVal = binCount > 0 ? sumVal / binCount : 0;
+                    
+                    let intensity = avgVal / 255;
+                    
+                    // EQ visual scaling: boost highs to counteract natural bass dominance and prevent disproportionate spikes
+                    const eqMultiplier = 0.7 + (i / numBars) * 1.5; 
+                    // Steeper exponential curve (2.4) expands dynamic range, forcing low volumes down and requiring true peaks to max out
+                    let scaledIntensity = Math.min(1, Math.pow(intensity, 2.4) * eqMultiplier);
+                    
+                    const barHeight = Math.max(2, scaledIntensity * visualizerCanvas.height); // Enforce 2px minimum baseline so canvas is always filled
+                    
+                    // Extreme dynamic color shifts for heavy visual hits
+                    const baseHue = 240 - ((i / numBars) * 240); // Full spectrum: Blue (240) for bass descending to Red (0) for treble
+                    const peakPunch = Math.pow(scaledIntensity, 1.8); // Exponential curve triggers intense flash only on hard hits
+                    const hue = baseHue - (peakPunch * 50); // Dynamic hue shift "heats up" notes on hard impacts
+                    const saturation = 30 + (scaledIntensity * 70); 
+                    const lightness = 10 + (peakPunch * 75); // Spikes to brilliant brightness on transients
+                    
+                    const reversedX = visualizerCanvas.width - x - barWidth;
+                    const currentBarWidth = barWidth - 1;
+                    const currentBarX = reversedX;
+                    const currentBarY = visualizerCanvas.height - barHeight;
+
+                    visualizerCtx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                    visualizerCtx.fillRect(currentBarX, currentBarY, currentBarWidth, barHeight);
+                    
+                    visualizerCtx.strokeStyle = '#000000';
+                    visualizerCtx.lineWidth = 1;
+                    visualizerCtx.strokeRect(currentBarX, currentBarY, currentBarWidth, barHeight);
+
+                    x += barWidth;
+                }
+            }
+
+            function drawAmbientFrame() {
+                if (isAudioFile) {
+                    if (audioPlayer.readyState === 0) return;
+                    const now = performance.now();
+                    lastAmbientTime = now;
+
+                    ambientCtx.globalAlpha = 1.0;
+                    ambientCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
+                    
+                    // The ambient canvas is 120vw/120vh and offset by -10vw/-10vh.
+                    // The visualizer is 60vw/30vh, centered at 20vw/35vh.
+                    // This maps the exact bounds so the glow originates exactly from the bars.
+                    const dw = ambientCanvas.width * 0.5;
+                    const dh = ambientCanvas.height * 0.25;
+                    const dx = ambientCanvas.width * 0.25;
+                    const dy = ambientCanvas.height * 0.375;
+
+                    // Stretch vertically to create a smooth, rounded blob of color instead of distinct blurry bars
+                    const stretchH = dh * 1.5;
+                    const baselineY = dy + dh;
+
+                    // Draw upward aura (anchored at baseline, expanding upwards)
+                    ambientCtx.drawImage(visualizerCanvas, dx, baselineY - stretchH, dw, stretchH);
+                    
+                    // Draw downward aura (anchored at baseline, expanding downwards)
+                    ambientCtx.save();
+                    ambientCtx.translate(0, baselineY);
+                    ambientCtx.scale(1, -1);
+                    ambientCtx.drawImage(visualizerCanvas, dx, -stretchH, dw, stretchH);
+                    ambientCtx.restore();
+                    
+                    isFirstFrame = false;
+                    return;
+                }
+
+                if (!nativeWidth || !nativeHeight || videoPlayer.readyState === 0) return;
+
+                const cropTopPx = parseFloat(cropTop.value) || 0;
             const cropBotPx = parseFloat(cropBottom.value) || 0;
             const cropLeftPx = parseFloat(cropLeft.value) || 0;
             const cropRightPx = parseFloat(cropRight.value) || 0;
@@ -1978,6 +2162,8 @@
             window.addEventListener('mousemove', (e) => {
                 if (e.clientX === 0 && e.clientY === 0) return;
 
+                const isOverPlaylist = playlistPanel.contains(e.target) || playlistHandle.contains(e.target);
+
                 if (e.clientX <= window.innerWidth * 0.15) {
                     playlistHandle.classList.add('show-indicator');
                     if (e.clientX <= window.innerWidth * 0.03) {
@@ -1987,11 +2173,11 @@
                         playlistHandle.classList.remove('bounce-hint');
                     }
                 } else {
-            playlistHandle.classList.remove('show-indicator');
-            if (!isPlaylistLockedOpen) {
-            playlistPanel.classList.remove('open');
-            }
-            }
+                    playlistHandle.classList.remove('show-indicator');
+                    if (!isPlaylistLockedOpen && !isOverPlaylist) {
+                        playlistPanel.classList.remove('open');
+                    }
+                }
             });
 
             btnPlaylistAdd.addEventListener('click', () => playlistAddInput.click());
@@ -2312,6 +2498,7 @@
 
             li.addEventListener('dblclick', (e) => {
             e.stopPropagation();
+            allowNextVideoAutoplay = true;
             playPlaylistItem(index);
             });
 
@@ -2330,10 +2517,13 @@
             filesToProcess.push(playlistFiles[index].pairedSrt);
             }
             processVideoFiles(filesToProcess, true);
+            
+            if (typeof resetIdleTimer === 'function') resetIdleTimer();
             }
 
             function playNext() {
                 if (playlistFiles.length < 2) return;
+                allowNextVideoAutoplay = true;
                 let nextIndex = currentPlayIndex + 1;
                 if (nextIndex >= playlistFiles.length) nextIndex = 0; // Wrap around
                 playPlaylistItem(nextIndex);
@@ -2341,6 +2531,7 @@
 
             function playPrev() {
                 if (playlistFiles.length < 2) return;
+                allowNextVideoAutoplay = true;
                 let prevIndex = currentPlayIndex - 1;
                 if (prevIndex < 0) prevIndex = playlistFiles.length - 1; // Wrap around
                 playPlaylistItem(prevIndex);
@@ -2349,7 +2540,17 @@
             // --- SYNC ENGINE AND UI CONTROLS ---
 
             videoPlayer.addEventListener('play', function() {
-            logState('Video play event fired.');
+            videoPlayer._hasStartedPlaying = true;
+            videoPlayer.style.opacity = '1';
+            customSubContainer.style.opacity = '1';
+            
+            if (isAudioFile) {
+                visualizerCanvas.classList.remove('hidden');
+                resizeVisualizer();
+                drawVisualizer();
+            } else {
+                visualizerCanvas.classList.add('hidden');
+            }
             playOverlay.classList.remove('visible');
             document.getElementById('iconPlay').style.display = 'none';
             document.getElementById('iconPause').style.display = 'block';
@@ -2367,7 +2568,7 @@
             });
 
             videoPlayer.addEventListener('pause', function() {
-            logState('Video pause event fired.');
+            cancelAnimationFrame(visAnimId);
             audioPlayer.pause();
             document.getElementById('iconPlay').style.display = 'block';
             document.getElementById('iconPause').style.display = 'none';
@@ -2375,37 +2576,32 @@
 
             // Force the video to match if hardware media keys toggle the audio track
             audioPlayer.addEventListener('play', function() {
-            logState('Audio play event fired.');
+            playOverlay.classList.remove('visible');
+            document.getElementById('iconPlay').style.display = 'none';
+            document.getElementById('iconPause').style.display = 'block';
             if (videoPlayer.paused) {
             videoPlayer.currentTime = audioPlayer.currentTime;
-            videoPlayer.play();
+            videoPlayer.play().catch(() => {});
             showIndicator(true);
             }
             });
 
             audioPlayer.addEventListener('pause', function() {
-            logState('Audio pause event fired. _isBufferingPause=' + !!audioPlayer._isBufferingPause + ' seeking=' + videoPlayer.seeking);
             // CRITICAL FIX: Prevent the buffering cascade loop from permanently pausing the video during timeline scrubs!
             if (!videoPlayer.paused && !videoPlayer.seeking && !audioPlayer._isBufferingPause) {
-            logState('Audio pause triggered cascade to pause video.');
             videoPlayer.pause();
             showIndicator(false);
             }
             });
 
-            videoPlayer.addEventListener('seeking', function() {
-            logState('Video seeking...');
-            });
-
             videoPlayer.addEventListener('seeked', function() {
-            logState('Video seeked successfully.');
             applySubtitleSelection();
             });
 
             playOverlay.addEventListener('click', function() {
-            if (videoPlayer.readyState > 0) {
-            videoPlayer.play();
-            audioPlayer.play().catch(e => console.log("Audio sync delayed"));
+            if (videoPlayer.readyState > 0 || audioPlayer.readyState > 0) {
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
             } else if (playlistFiles.length > 0) {
             playPlaylistItem(0);
             }
@@ -2445,13 +2641,14 @@
             return;
             }
 
-            if (videoPlayer.readyState > 0) {
-            if (videoPlayer.paused) {
-            videoPlayer.play();
-            audioPlayer.play().catch(err => console.log("Audio sync delayed"));
+            if (videoPlayer.readyState > 0 || audioPlayer.readyState > 0) {
+            if (videoPlayer.paused && audioPlayer.paused) {
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
             showIndicator(true);
             } else {
             videoPlayer.pause();
+            audioPlayer.pause();
             showIndicator(false);
             }
             }
@@ -2483,15 +2680,16 @@
             }
 
             btnPlayPause.addEventListener('click', () => {
-            if (videoPlayer.readyState === 0 && playlistFiles.length > 0) {
+            if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
             playPlaylistItem(0);
             return;
             }
-            if (videoPlayer.paused) {
-            videoPlayer.play();
-            audioPlayer.play().catch(e => console.log("Audio sync delayed"));
+            if (videoPlayer.paused && audioPlayer.paused) {
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
             } else {
             videoPlayer.pause();
+            audioPlayer.pause();
             }
             });
 
@@ -2552,14 +2750,12 @@
             let wasPlayingBeforeDrag = false;
 
             seekSlider.addEventListener('mousedown', () => {
-            logState('Timeline scrub started (mousedown).');
             seekSlider.isDragging = true;
             wasPlayingBeforeDrag = !videoPlayer.paused;
             });
 
             window.addEventListener('mouseup', () => {
             if (seekSlider.isDragging) {
-            logState('Timeline scrub ended (mouseup). Restoring play state: ' + wasPlayingBeforeDrag);
             seekSlider.isDragging = false;
             if (wasPlayingBeforeDrag && videoPlayer.paused) {
             videoPlayer.play().catch(() => {});
@@ -2569,14 +2765,12 @@
             });
 
             seekSlider.addEventListener('touchstart', () => {
-            logState('Timeline scrub started (touchstart).');
             seekSlider.isDragging = true;
             wasPlayingBeforeDrag = !videoPlayer.paused;
             }, {passive: true});
 
             window.addEventListener('touchend', () => {
             if (seekSlider.isDragging) {
-            logState('Timeline scrub ended (touchend). Restoring play state: ' + wasPlayingBeforeDrag);
             seekSlider.isDragging = false;
             if (wasPlayingBeforeDrag && videoPlayer.paused) {
             videoPlayer.play().catch(() => {});
@@ -2666,8 +2860,13 @@
 
             const radialMask = `radial-gradient(${radiusX}px ${radiusY}px at ${centerX}% ${centerY}%, black 0%, black ${innerStop}%, transparent 100%)`;
 
-            ambientCanvas.style.webkitMaskImage = radialMask;
-            ambientCanvas.style.maskImage = radialMask;
+            if (isAudioFile) {
+                ambientCanvas.style.webkitMaskImage = 'none';
+                ambientCanvas.style.maskImage = 'none';
+            } else {
+                ambientCanvas.style.webkitMaskImage = radialMask;
+                ambientCanvas.style.maskImage = radialMask;
+            }
             ambientCanvas.style.webkitMaskComposite = '';
             ambientCanvas.style.maskComposite = '';
             }
@@ -2799,14 +2998,15 @@
 
             if (e.code === 'Space' || key === 'k') {
                 e.preventDefault();
-                if (videoPlayer.readyState === 0 && playlistFiles.length > 0) {
+                if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
                     playPlaylistItem(0);
-                } else if (videoPlayer.paused && videoPlayer.readyState > 0) {
-                    videoPlayer.play();
-                    audioPlayer.play().catch(err => console.log(err));
+                } else if ((videoPlayer.paused && videoPlayer.readyState > 0) || (audioPlayer.paused && audioPlayer.readyState > 0)) {
+                    videoPlayer.play().catch(() => {});
+                    audioPlayer.play().catch(() => {});
                     showIndicator(true);
-                } else if (!videoPlayer.paused) {
+                } else if (!videoPlayer.paused || !audioPlayer.paused) {
                     videoPlayer.pause();
+                    audioPlayer.pause();
                     showIndicator(false);
                 }
             } else if (e.code === 'ArrowLeft') {
@@ -2996,6 +3196,58 @@
             }, 4000);
             }
             });
+
+            // Bridge listener for WinUI 3 payload handling when XAML DragOverlay intercepts the native drop
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.addEventListener('message', e => {
+                    try {
+                        let msg = JSON.parse(e.data);
+                        if (msg.type === 'DRAG_ENTER') {
+                            document.body.classList.add('drag-over');
+                        } else if (msg.type === 'DRAG_LEAVE') {
+                            document.body.classList.remove('drag-over');
+                        } else if (msg.type === 'LOAD_SRT' && typeof loadSrt === 'function') {
+                            let blob = new Blob([msg.srtContent], { type: 'text/plain' });
+                            loadSrt(new File([blob], msg.srtName, { type: 'text/plain' }));
+                        } else if (msg.type === 'RESTORE_PLAYLIST') {
+                            playlistFiles = [];
+                            msg.items.forEach(name => {
+                                playlistFiles.push({
+                                    name: name,
+                                    type: "video/mp4",
+                                    isVirtual: true,
+                                    videoUrl: `https://video.ssvidplayer/${encodeURIComponent(name)}`,
+                                    audioUrl: `https://audio.ssvidplayer/${encodeURIComponent(name)}`
+                                });
+                            });
+                        } else if (msg.type === 'LOAD_MEDIA') {
+                            let vFile = {
+                                name: msg.fileName,
+                                type: "video/mp4",
+                                isVirtual: true,
+                                videoUrl: msg.videoUrl,
+                                audioUrl: msg.audioUrl
+                            };
+                            let idx = playlistFiles.findIndex(f => f.name === msg.fileName);
+                            if (idx === -1) playlistFiles.push(vFile);
+                            renderPlaylist();
+                            processVideoFiles([vFile], true);
+                        } else if (msg.type === 'BATCH_PROCESS_FILES') {
+                            let filesToProcess = [];
+                            msg.files.forEach(f => {
+                                if (f.srtContent !== undefined) {
+                                    let blob = new Blob([f.srtContent], { type: 'text/plain' });
+                                    let srtFile = new File([blob], f.name, { type: 'text/plain' });
+                                    filesToProcess.push(srtFile);
+                                } else {
+                                    filesToProcess.push(f);
+                                }
+                            });
+                            processVideoFiles(filesToProcess, false);
+                        }
+                    } catch (err) {}
+                });
+            }
         </script>
 
     </body>
