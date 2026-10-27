@@ -63,7 +63,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 
 - **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads. The only thing it does on the internet is checks GitHub for updates once when it's loaded. 
 
-- **Other Bells & Whistles:**
+- **Cherries on top:**
   * Scroll-wheel support for volume, size, and cropping values
   * Loop toggling for background media
   * Auto-hiding, distraction-free UI
