@@ -12,7 +12,7 @@ using Microsoft.Web.WebView2.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
 
-namespace SSVidPlayer
+namespace Rapt
 {
 	public sealed partial class MainWindow : Window
 	{
@@ -20,13 +20,13 @@ namespace SSVidPlayer
 		private bool _isPageReady = false;
 		private CancellationTokenSource? _subtitleCts;
 		private readonly Dictionary<string, string> _fileMap = new(StringComparer.OrdinalIgnoreCase);
-		private readonly string _playlistFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SSVidPlayer", "playlist.json");
+		private readonly string _playlistFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "playlist.json");
 
 		public MainWindow()
 		{
 			this.InitializeComponent();
 
-			string iconPath = Path.Combine(AppContext.BaseDirectory, "SSVidPlayerIcon.ico");
+			string iconPath = Path.Combine(AppContext.BaseDirectory, "RaptIcon.ico");
 			if (File.Exists(iconPath))
 			{
 				this.AppWindow.SetIcon(iconPath);
@@ -97,9 +97,9 @@ namespace SSVidPlayer
 							if (item is Windows.Storage.StorageFile file)
 							{
 								_fileMap[file.Name] = file.Path;
-								string ext = Path.GetExtension(file.Name).ToLowerInvariant();
+								string ext = Path.GetExtension(file.Name);
 
-								if (ext == ".srt")
+								if (ext.Equals(".srt", StringComparison.OrdinalIgnoreCase))
 								{
 									string srtContent = await File.ReadAllTextAsync(file.Path);
 									droppedFiles.Add(new JsonObject
@@ -112,13 +112,13 @@ namespace SSVidPlayer
 								else
 								{
 									string mimeType = "application/octet-stream";
-									if (ext == ".mp4") mimeType = "video/mp4";
-									else if (ext == ".webm") mimeType = "video/webm";
-									else if (ext == ".mkv") mimeType = "video/x-matroska";
-									else if (ext == ".mp3") mimeType = "audio/mpeg";
-									else if (ext == ".wav") mimeType = "audio/wav";
-									else if (ext == ".ogg") mimeType = "audio/ogg";
-									else if (ext == ".flac") mimeType = "audio/flac";
+									if (ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase)) mimeType = "video/mp4";
+									else if (ext.Equals(".webm", StringComparison.OrdinalIgnoreCase)) mimeType = "video/webm";
+									else if (ext.Equals(".mkv", StringComparison.OrdinalIgnoreCase)) mimeType = "video/x-matroska";
+									else if (ext.Equals(".mp3", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/mpeg";
+									else if (ext.Equals(".wav", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/wav";
+									else if (ext.Equals(".ogg", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/ogg";
+									else if (ext.Equals(".flac", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/flac";
 
 									string encodedFileName = Uri.EscapeDataString(file.Name);
 									string cacheBuster = "?t=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -128,8 +128,8 @@ namespace SSVidPlayer
 										["name"] = file.Name,
 										["type"] = mimeType,
 										["isVirtual"] = true,
-										["videoUrl"] = $"https://video.ssvidplayer/{encodedFileName}{cacheBuster}",
-										["audioUrl"] = $"https://audio.ssvidplayer/{encodedFileName}{cacheBuster}"
+										["videoUrl"] = $"https://video.rapt/{encodedFileName}{cacheBuster}",
+										["audioUrl"] = $"https://audio.rapt/{encodedFileName}{cacheBuster}"
 									});
 								}
 							}
@@ -215,7 +215,7 @@ namespace SSVidPlayer
 					"--autoplay-policy=no-user-gesture-required --enable-gpu-rasterization --enable-clear-hevc-for-testing --enable-features=MediaFoundationD3D11VideoCapture,PlatformHEVCDecoderSupport"
 				);
 
-				string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SSVidPlayer", "WebView2");
+				string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "WebView2");
 				Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", userDataFolder);
 
 				await PlayerWebView.EnsureCoreWebView2Async();
@@ -252,14 +252,14 @@ namespace SSVidPlayer
 				// Map the app's Assets folder to a virtual domain
 				string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
 				coreWv.SetVirtualHostNameToFolderMapping(
-					"app.ssvidplayer",
+					"app.rapt",
 					assetsPath,
 					CoreWebView2HostResourceAccessKind.Allow
 				);
 
 				// --- THE FIX: MANUAL MEDIA INTERCEPTION WITH FULL CORS & RANGE SUPPORT ---
-				coreWv.AddWebResourceRequestedFilter("https://video.ssvidplayer/*", CoreWebView2WebResourceContext.All);
-				coreWv.AddWebResourceRequestedFilter("https://audio.ssvidplayer/*", CoreWebView2WebResourceContext.All);
+				coreWv.AddWebResourceRequestedFilter("https://video.rapt/*", CoreWebView2WebResourceContext.All);
+				coreWv.AddWebResourceRequestedFilter("https://audio.rapt/*", CoreWebView2WebResourceContext.All);
 
 				coreWv.WebResourceRequested += async (s, e) =>
 				{
@@ -267,7 +267,7 @@ namespace SSVidPlayer
 					try
 					{
 						// 1. CORS Preflight for Cross-Origin Audio/Video pipelines
-						if (e.Request.Method.ToUpper() == "OPTIONS")
+						if (e.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
 						{
 							e.Response = coreWv.Environment.CreateWebResourceResponse(
 								null, 204, "No Content",
@@ -437,7 +437,7 @@ namespace SSVidPlayer
 								WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
 								savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
 								savePicker.FileTypeChoices.Add("JSON Playlist", [".json"]);
-								savePicker.SuggestedFileName = "SSVid_Playlist";
+								savePicker.SuggestedFileName = "Rapt_Playlist";
 
 								var file = await savePicker.PickSaveFileAsync();
 								if (file != null)
@@ -532,7 +532,14 @@ namespace SSVidPlayer
 				};
 
 				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
-				PlayerWebView.Source = new Uri("https://app.ssvidplayer/index.html?isNative=1");
+				PlayerWebView.Source = new Uri("https://app.rapt/index.html?isNative=1");
+
+				_isPageReady = true;
+				if (_pendingFilePath != null)
+				{
+					_ = ProcessExternalFileAsync(_pendingFilePath);
+					_pendingFilePath = null;
+				}
 			}
 			catch (Exception)
 			{
@@ -546,10 +553,10 @@ namespace SSVidPlayer
 				return;
 			}
 
-			string ext = Path.GetExtension(filePath).ToLowerInvariant();
+			string ext = Path.GetExtension(filePath);
 			string fileName = Path.GetFileName(filePath);
 
-			if (ext == ".srt")
+			if (ext.Equals(".srt", StringComparison.OrdinalIgnoreCase))
 			{
 				string srtText = await File.ReadAllTextAsync(filePath);
 				var srtPayload = new JsonObject
@@ -566,8 +573,8 @@ namespace SSVidPlayer
 			string encodedFileName = Uri.EscapeDataString(fileName);
 			string cacheBuster = "?t=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-			string virtualVideoUrl = $"https://video.ssvidplayer/{encodedFileName}{cacheBuster}";
-			string virtualAudioUrl = $"https://audio.ssvidplayer/{encodedFileName}{cacheBuster}";
+			string virtualVideoUrl = $"https://video.rapt/{encodedFileName}{cacheBuster}";
+			string virtualAudioUrl = $"https://audio.rapt/{encodedFileName}{cacheBuster}";
 
 			var mediaPayload = new JsonObject
 			{

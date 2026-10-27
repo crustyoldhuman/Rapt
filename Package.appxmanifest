@@ -7,18 +7,13 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity
-    Name="crustyoldhuman.SSVidPlayer"
-    Publisher="CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493"
-    Version="1.2.0.0" />
-
-  <mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
-
-  <Properties>
-    <DisplayName>SSVidPlayer</DisplayName>
-    <PublisherDisplayName>crustyoldhuman</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.png</Logo>
-  </Properties>
+	<Identity    Name="crustyoldhuman.RaptVideoPlayer"    Publisher="CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493"    Version="1.2.0.0" />
+	<mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+	<Properties>
+		<DisplayName>Rapt Video Player</DisplayName>
+		<PublisherDisplayName>crustyoldhuman</PublisherDisplayName>
+		<Logo>Assets\StoreLogo.png</Logo>
+	</Properties>
 
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26226.0" />
@@ -33,13 +28,13 @@
     <Application Id="App"
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
-      <uap:VisualElements
-        DisplayName="SSVidPlayer"
-        Description="SSVidPlayer"
-        BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
+		<uap:VisualElements
+		  DisplayName="Rapt Video Player"
+		  Description="Rapt Video Player"
+		  BackgroundColor="transparent"
+		  Square150x150Logo="Assets\Square150x150Logo.png"
+		  Square44x44Logo="Assets\Square44x44Logo.png">
+			<uap:DefaultTile ShortName="Rapt" Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
 		  <uap:SplashScreen Image="Assets\SplashScreen.png" />
 	  </uap:VisualElements>
 	  <Extensions>

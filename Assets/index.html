@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SSVidPlayer 1.2</title>
+        <title>Rapt Video Player 1.2</title>
         <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='4' fill='%23142229' stroke='black' stroke-width='1'/%3E%3Cpolygon points='9,7 18,12 9,17' fill='%2323A620'/%3E%3C/svg%3E" type="image/svg+xml">
         <style>
             body {
@@ -912,16 +912,16 @@
 
         <div id="customSubContainer" class="draggable-sub"></div>
 
-        <a id="infoLink" href="#" style="position: fixed; bottom: 5px; right: 20px; color: #166E14; text-decoration: none; font-size: 14px; font-weight: semi-bold; z-index: 1000; opacity: .5; transition: opacity 0.5s ease; pointer-events: auto;">SSVidPlayer</a>
+        <a id="infoLink" href="#" style="position: fixed; bottom: 5px; right: 20px; color: #166E14; text-decoration: none; font-size: 14px; font-weight: semi-bold; z-index: 1000; opacity: .5; transition: opacity 0.5s ease; pointer-events: auto;">Rapt</a>
 
         <div id="infoPopupOverlay" class="info-popup-overlay">
             <div class="info-popup">
                 <div id="closePopupBtn" class="close-popup-btn" title="Close">&#10006;</div>
-                <h2>SSVidPlayer</h2>
+                <h2>Rapt</h2>
                 <div class="version-text">version 1.2</div>
                 <p class="github-link">
-                    View SSVidPlayer on GitHub:<br>
-                    <a href="https://github.com/crustyoldhuman/SSVidPlayer" target="_blank">https://github.com/crustyoldhuman/SSVidPlayer</a>
+                    View Rapt on GitHub:<br>
+                    <a href="https://github.com/crustyoldhuman/Rapt" target="_blank">https://github.com/crustyoldhuman/Rapt</a>
                 </p>
                 <p>
                     Like weird games? Check out Crustyoldhuman:<br>
@@ -939,7 +939,7 @@
 
         <div id="updatePopup" class="update-popup">
             <div id="updatePopupClose" class="update-popup-close" title="Dismiss">&#10006;</div>
-            SSVidPlayer got an update! Click <a href="https://github.com/crustyoldhuman/SSVidPlayer/releases" target="_blank" id="updateLink">here</a> to get the new version.
+            Rapt got an update! Click <a href="https://github.com/crustyoldhuman/Rapt/releases" target="_blank" id="updateLink">here</a> to get the new version.
         </div>
 
         <script>
@@ -982,7 +982,7 @@
             const updateLink = document.getElementById('updateLink');
 
             function checkForUpdates() {
-                fetch('https://api.github.com/repos/crustyoldhuman/SSVidPlayer/releases/latest')
+                fetch('https://api.github.com/repos/crustyoldhuman/Rapt/releases/latest')
                     .then(response => response.json())
                     .then(data => {
                         if (data && data.tag_name) {
@@ -1075,7 +1075,7 @@
 
             function setFitToPage(enabled, applyScale = true) {
                 isFitToPageEnabled = enabled;
-                localStorage.setItem('ssvid_fitToPage', enabled);
+                localStorage.setItem('rapt_fitToPage', enabled);
                 if (enabled) {
                     btnFit.style.backgroundColor = '#23A620';
                     btnFit.style.color = '#142229';
@@ -1227,9 +1227,9 @@
                 }
             }
 
-            const savedAmbient = localStorage.getItem('ssvid_ambientEnabled');
-            const savedGlow = localStorage.getItem('ssvid_glowIntensity');
-            const savedFit = localStorage.getItem('ssvid_fitToPage');
+            const savedAmbient = localStorage.getItem('rapt_ambientEnabled');
+            const savedGlow = localStorage.getItem('rapt_glowIntensity');
+            const savedFit = localStorage.getItem('rapt_fitToPage');
 
             ambientToggle.checked = savedAmbient === 'true';
             isAmbientEnabled = ambientToggle.checked;
@@ -2128,13 +2128,13 @@
 
             ambientToggle.addEventListener('change', (e) => {
             isAmbientEnabled = e.target.checked;
-            localStorage.setItem('ssvid_ambientEnabled', isAmbientEnabled);
+            localStorage.setItem('rapt_ambientEnabled', isAmbientEnabled);
             glowIntensityGroup.style.display = isAmbientEnabled ? 'block' : 'none';
             manageAmbientState();
             });
 
             glowSlider.addEventListener('input', (e) => {
-            localStorage.setItem('ssvid_glowIntensity', e.target.value);
+            localStorage.setItem('rapt_glowIntensity', e.target.value);
             if (isAmbientEnabled) {
             ambientCanvas.style.opacity = e.target.value / 100;
             }
@@ -3216,8 +3216,8 @@
                                     name: name,
                                     type: "video/mp4",
                                     isVirtual: true,
-                                    videoUrl: `https://video.ssvidplayer/${encodeURIComponent(name)}`,
-                                    audioUrl: `https://audio.ssvidplayer/${encodeURIComponent(name)}`
+                                    videoUrl: `https://video.rapt/${encodeURIComponent(name)}`,
+                                    audioUrl: `https://audio.rapt/${encodeURIComponent(name)}`
                                 });
                             });
                         } else if (msg.type === 'LOAD_MEDIA') {

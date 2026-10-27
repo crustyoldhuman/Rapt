@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace SSVidPlayer
+namespace Rapt
 {
 	public partial class App : Application
 	{
@@ -10,7 +10,7 @@ namespace SSVidPlayer
 		{
 			try
 			{
-				string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SSVidPlayer", "debug_log.txt");
+				string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "debug_log.txt");
 				Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
 				File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n");
 			}
