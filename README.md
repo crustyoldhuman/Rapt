@@ -42,7 +42,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
   
 - **Playlist Manager:** Load multiple videos and save/load your playlists for continuous playback. Drag-and-drop your media to re-sort your list. Saving/loading is only supported on Windows app. 
 
-- **250% Audio Amplification:** Boosts your volume limit by using the Web Audio API `GainNode`, allowing you to turn up quiet audio tracks up to 2.5x (250%) their volume.
+- **250% Audio Amplification:** Boosts your volume limit by using the Web Audio API `GainNode`, allowing you to turn up quiet audio tracks up to 2.5x their volume.
 
 - **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your page height and scales the video to utilize the maximum available screen real estate.
 
