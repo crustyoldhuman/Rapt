@@ -11,7 +11,7 @@ A native Windows desktop application or standalone HTML5 video player for PC des
 
 ***Note:*** *SSVidPlayer is not intended for mobile devices.*
 <h3 align="center">
-  <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">!!~Try SSVidPlayer in your browser right now, no download required. Click here~!!</a>
+  <a href="https://crustyoldhuman.github.io/SSVidPlayer/RaptVideoPlayer.html">!!~Try SSVidPlayer in your browser right now, no download required. Click here~!!</a>
 </h3>
 <br>
 
