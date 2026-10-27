@@ -1,4 +1,4 @@
-<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/1061749b-69e1-4a03-97f6-f28ec9a2f328" /></p>
+<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/b4cf3f6e-5cfc-4a11-9c0a-9fff3ea1403a" /></p>
 <br>
 
 # Rapt - Immersive Video Player with No-Fuss Super Sampling
@@ -7,7 +7,7 @@
 -->
 A native Windows desktop application or standalone HTML5 video player for PC designed to apply native AI video upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/e6f529f6-cee5-4171-a359-6aaf3395ca6d" /></p>
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/11abeb4a-3aca-43b5-8a3a-b642d15c1773" /></p>
 
 ***Note:*** *Rapt is not intended for mobile devices.*
 <h3 align="center">
@@ -15,27 +15,25 @@ A native Windows desktop application or standalone HTML5 video player for PC des
 </h3>
 <br>
 
-<p align="center"><img width="800" alt="super sampling on/off" src="https://github.com/user-attachments/assets/1ee491e3-2f99-457a-a335-2f2ec2abb029" /></p>
-
-
 ## Why This Exists
 
 Trying to play your downloaded videos with upscaling on Windows the way streaming videos upscale is a sh**show nightmare. No matter what, I did VLC would not enable my nvidia super resolution feature, and I could not get MP-HC or other alternatives to trigger it either. Getting your $800+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring deep media player settings or obscure plugins that don't even end up working half the time.
 
 Rapt exists for one core purpose: **to make local video AI upscaling easy.**
 
-<p align="center"><img width="500" src="https://github.com/user-attachments/assets/b0dab382-d3d6-4f76-ab22-d4e4bd938758" /></p>
+<p align="center"><img width="500" alt="VSREasePromo" src="https://github.com/user-attachments/assets/5df9f8f2-e52f-47fc-adbe-23de531bd2c8" /></p>
 
 Even if VLC VSR or MP-C works for you, if you just want to bring some videos to a friends house on a flash drive to watch on their PC or something you're still stuck bringing a whole portable media player setup or just giving up on super sampling on their computer. With this workaround, you can easily take advantage of anyone's fancy efficient GPU VSR without any setup fuss at all. By running local files through a custom HTML5 wrapper, Rapt utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. If your upscaling works on YouTube or other streaming videos, it will work on Rapt as well.
 
 All the other bells and whistles are just cherries on top of that core purpose.
 <br><br>
 
-<p align="center"><img width="800" alt="GlowPromo" src="https://github.com/user-attachments/assets/d04e825d-4844-409a-9f64-46792700655c" /></p>
-
 ## Other Bells & Whistles
 
 - **Video Scaling:** Because low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
+
+- **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
+<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/c209e1b8-64f6-412f-ab7c-4504e8b03daf" /></p>
   
 - **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and upscalers waste resources trying to process encoded black letterbox bars. Rapt lets you crop the edges in real-time to fix both of these problems.
   
@@ -45,6 +43,10 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 - **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your page height and scales the video to utilize the maximum available screen real estate.
 
+- **Responsive Default Audio Visualizer:** See your audio dance and react in a gorgeous, smooth spectrum visualizer whenever audio is played. Bonus: Supports the "Glow" feature for an even more dynamic effect.
+
+<p align="center"><img width="800" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/fb3fb7bb-8bfc-4fa2-84ac-38497eba832c" /></p>
+
 - **Advanced Subtitle Engine:**
 
   * **Native Demuxing (Windows App):** Automatically extracts embedded subtitles directly from `.mkv` and `.mp4` containers.
@@ -53,8 +55,6 @@ All the other bells and whistles are just cherries on top of that core purpose.
   * Real-time Subtitle Sync: To adjust the subtitle sync settings, click or scroll the **+** / **-** to fix out-of-sync text.
   * Draggable subtitles (click and move subtitle text anywhere on the screen).
   * Adjustable subtitle font size.
-
-- **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
 
 - **Broad Media Support:** Plays `.mp4`, `.mkv` (if the browser supports the codec), and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. The Windows app version increases filetype support slightly, so if `.mkv` are important to you, download the installer. 
 
