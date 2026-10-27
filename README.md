@@ -17,7 +17,7 @@ Most modern players flex on compatibility, but obscure file types are a rarity. 
 
 <p align="center"><img width="500" alt="VSREasePromo" src="https://github.com/user-attachments/assets/5df9f8f2-e52f-47fc-adbe-23de531bd2c8" /></p>
 
-Even if VLC VSR or MP-C works for you, if you just want to bring some videos to a friends house on a flash drive to watch on their PC or something you're still stuck bringing a whole portable media player setup or just giving up on super sampling on their computer. With this workaround, you can easily take advantage of anyone's fancy efficient GPU VSR without any setup fuss at all. The standalone `.html` Rapt player allows you to use any computers Super Resolution capable GPU to upscale a video, without any setup or download needed.
+Even if VLC VSR or MP-C works for you, if you just want to bring some videos to a friends house on a flash drive to watch on their PC or something you're still stuck bringing a whole portable media player setup or just giving up on super sampling on their computer. With this workaround, you can easily take advantage of anyone's fancy efficient GPU VSR without any setup fuss at all. The standalone `.html` Rapt player allows you to use any computers Super Resolution capable GPU to upscale a local video, without any setup or download needed.
 
 <h3 align="center">
   <a href="https://crustyoldhuman.github.io/Rapt/RaptVideoPlayer.html">~Try the Rapt Video Player right now in your browser, no download required.~</a>
