@@ -129,7 +129,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 
 - The ambilight glow effect will look wonky if there are any black edges or bars permanently embedded into a playing video file. Use the edge cropping tool to fix this.
 
-- Super Resolution via GPU processing inherently requires the playing video to be actively scaled up. This means, if your video is only playing at 100% scale, it will not activate your VSR. This is also how YouTube, etc work. 
+- Super Resolution via GPU processing inherently requires the playing video to be actively scaled up. In other words if your video is playing at 100% scale, it will not activate your VSR. This is also how YouTube, etc work. Increase the video size above 100% to activate super resolution. 
 
 - I am unsure if this supports upscaling via AMD or not, because I have no access to an AMD GPU. If anyone can tell me if this works or not, that'd be great!
 
