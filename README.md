@@ -89,7 +89,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. Drag and drop an `.srt` file to load subtitles (embedded subtitles require the Windows App version).
 
-** ***NOTE*** ** the file "SSVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of SSVideoPlayer. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/Rapt/Rapt.html to your browser so you can always have easy access anywhere on any computer to a video player that supports Super Sampling.
+** ***NOTE*** ** the file "RaptVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of Rapt Player. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/Rapt/Rapt.html to your browser so you can always have easy access anywhere on any computer to a video player that supports Super Sampling.
 
 ## Shortcuts & Controls
 * **Spacebar** / **K:** **Play** / **Pause**
