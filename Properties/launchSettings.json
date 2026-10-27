@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "SSVidPlayer (Package)": {
+    "Rapt (Package)": {
       "commandName": "MsixPackage"
     },
-    "SSVidPlayer (Unpackaged)": {
+    "Rapt (Unpackaged)": {
       "commandName": "Project"
     }
   }

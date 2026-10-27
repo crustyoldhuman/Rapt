@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Rapt Video Player 1.2</title>
+        <title>Rapt Player 1.3</title>
         <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='4' fill='%23142229' stroke='black' stroke-width='1'/%3E%3Cpolygon points='9,7 18,12 9,17' fill='%2323A620'/%3E%3C/svg%3E" type="image/svg+xml">
         <style>
             body {
@@ -651,9 +651,9 @@
                 background-color: rgba(30, 30, 30, 0.85);
                 border: 1px solid #000000;
                 border-radius: 10px;
-                padding: 30px;
-                max-width: 500px;
-                width: 80%;
+                padding: 15px 30px 20px 30px;
+                max-width: 560px;
+                width: 90%;
                 color: #23A620;
                 position: relative;
                 box-shadow: 0px 4px 15px rgba(0,0,0,0.8);
@@ -662,9 +662,9 @@
                 text-align: center;
             }
             .info-popup h2 {
-                margin-top: 0;
-                margin-bottom: 0px;
-                font-size: 28px;
+                margin-top: 5px;
+                margin-bottom: 5px;
+                font-size: 24px;
             }
             .info-popup h3 {
                 margin-bottom: 5px;
@@ -734,6 +734,52 @@
                 font-weight: bold;
                 cursor: pointer;
                 user-select: none;
+            }
+            .popup-tabs {
+                display: flex;
+                justify-content: center;
+                gap: 30px;
+                margin-top: 5px;
+                margin-bottom: 15px;
+                border-bottom: 1px solid #142229;
+                padding-bottom: 10px;
+            }
+            .popup-tab {
+                cursor: pointer;
+                font-size: 18px;
+                font-weight: bold;
+                color: #888888;
+                transition: color 0.2s, filter 0.2s;
+            }
+            .popup-tab:hover {
+                color: #23A620;
+                filter: brightness(1.3);
+            }
+            .popup-tab.active {
+                color: #23A620;
+                text-decoration: underline;
+                text-underline-offset: 6px;
+            }
+            .tab-content {
+                display: none;
+            }
+            .tab-content.active {
+                display: block;
+            }
+            .controls-list {
+                display: grid;
+                grid-template-columns: max-content auto max-content auto;
+                column-gap: 20px;
+                row-gap: 10px;
+                text-align: left;
+                margin: 0 auto;
+                width: max-content;
+                font-size: 13.5px;
+            }
+            .controls-list span {
+                color: #ffffff;
+                font-weight: bold;
+                text-align: right;
             }
         </style>
     </head>
@@ -912,28 +958,61 @@
 
         <div id="customSubContainer" class="draggable-sub"></div>
 
-        <a id="infoLink" href="#" style="position: fixed; bottom: 5px; right: 20px; color: #166E14; text-decoration: none; font-size: 14px; font-weight: semi-bold; z-index: 1000; opacity: .5; transition: opacity 0.5s ease; pointer-events: auto;">Rapt</a>
+        <a id="infoLink" href="#" style="position: fixed; bottom: 5px; right: 28px; color: #166E14; text-decoration: none; font-size: 16px; font-weight: bold; z-index: 1000; opacity: .5; transition: opacity 0.5s ease; pointer-events: auto;">Rapt Info</a>
 
         <div id="infoPopupOverlay" class="info-popup-overlay">
             <div class="info-popup">
                 <div id="closePopupBtn" class="close-popup-btn" title="Close">&#10006;</div>
-                <h2>Rapt</h2>
-                <div class="version-text">version 1.2</div>
-                <p class="github-link">
-                    View Rapt on GitHub:<br>
-                    <a href="https://github.com/crustyoldhuman/Rapt" target="_blank">https://github.com/crustyoldhuman/Rapt</a>
-                </p>
-                <p>
-                    Like weird games? Check out Crustyoldhuman:<br>
-                    <a href="https://www.youtube.com/@crustyoldhuman" target="_blank">www.youtube.com/@crustyoldhuman</a><br>
-                    <a href="https://www.twitch.tv/crustyoldhuman" target="_blank">www.twitch.tv/crustyoldhuman</a>
-                </p>
-                <h3>Other free programs from Crustyoldhuman:</h3>
-                SkyPeek (Weather):<br>
-                <a href="https://github.com/crustyoldhuman/SkyPeek" target="_blank">https://github.com/crustyoldhuman/SkyPeek</a><br><br>
-                ProperDim (Brightness control):<br>
-                <a href="https://github.com/crustyoldhuman/ProperDim" target="_blank">https://github.com/crustyoldhuman/ProperDim</a><br>
-                <a href="https://apps.microsoft.com/detail/9p4lhj799hxm" target="_blank">https://apps.microsoft.com/detail/9p4lhj799hxm</a></p>
+                
+                <div class="popup-tabs">
+                    <div id="tabInfo" class="popup-tab active">Info</div>
+                    <div id="tabControls" class="popup-tab">Controls</div>
+                </div>
+
+                <div id="contentInfo" class="tab-content active">
+                    <h2>Rapt</h2>
+                    <div class="version-text">Version 1.3</div>
+                    <p class="github-link">
+                        View Rapt on GitHub:<br>
+                        <a href="https://github.com/crustyoldhuman/Rapt" target="_blank">https://github.com/crustyoldhuman/Rapt</a>
+                    </p>
+                    <p>
+                        Like weird games? Check out Crustyoldhuman:<br>
+                        <a href="https://www.youtube.com/@crustyoldhuman" target="_blank">www.youtube.com/@crustyoldhuman</a><br>
+                        <a href="https://www.twitch.tv/crustyoldhuman" target="_blank">www.twitch.tv/crustyoldhuman</a>
+                    </p>
+                    <h3>Other free programs from Crustyoldhuman:</h3>
+                    SkyPeek (Weather):<br>
+                    <a href="https://github.com/crustyoldhuman/SkyPeek" target="_blank">https://github.com/crustyoldhuman/SkyPeek</a><br><br>
+                    ProperDim (Brightness control):<br>
+                    <a href="https://github.com/crustyoldhuman/ProperDim" target="_blank">https://github.com/crustyoldhuman/ProperDim</a><br>
+                    <a href="https://apps.microsoft.com/detail/9p4lhj799hxm" target="_blank">https://apps.microsoft.com/detail/9p4lhj799hxm</a>
+                </div>
+
+                <div id="contentControls" class="tab-content">
+                    <div class="controls-list">
+                        <span>Space / K</span><div>Play / Pause</div>
+                        <span>M</span><div>Toggle Mute</div>
+                        
+                        <span>Double-Click</span><div>Play / Pause / Browse</div>
+                        <span>F</span><div>Toggle Fullscreen</div>
+                        
+                        <span>Arrows L / R</span><div>Skip 5s</div>
+                        <span>T</span><div>Toggle Fit to Page</div>
+                        
+                        <span>J / L</span><div>Skip 10s</div>
+                        <span>C</span><div>Toggle Subtitles</div>
+                        
+                        <span>Arrows U / D</span><div>Adjust Volume</div>
+                        <span>G</span><div>Toggle Glow</div>
+                        
+                        <span>Scroll Wheel</span><div>Volume / Seek</div>
+                        <span>R</span><div>Toggle Repeat Mode</div>
+                        
+                        <span>N / P</span><div>Next / Prev Track</div>
+                        <span></span><div></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -943,7 +1022,7 @@
         </div>
 
         <script>
-            const APP_VERSION = "1.2.0.0"; // Update this with each release
+            const APP_VERSION = "1.3.0.0"; // Update this with each release
             const videoFileInput = document.getElementById('videoFileInput');
             const videoPlayer = document.getElementById('videoPlayer');
             const audioPlayer = document.getElementById('audioPlayer');
@@ -3059,6 +3138,8 @@
                     }
                     applySubtitleSelection();
                 }
+            } else if (key === 'g') {
+                ambientToggle.click();
             } else if (key === 'r') {
                 btnLoop.click();
             } else if (key === 'n') {
@@ -3170,6 +3251,25 @@
             if (e.target === infoPopupOverlay) {
             infoPopupOverlay.classList.remove('visible');
             }
+            });
+
+            const tabInfo = document.getElementById('tabInfo');
+            const tabControls = document.getElementById('tabControls');
+            const contentInfo = document.getElementById('contentInfo');
+            const contentControls = document.getElementById('contentControls');
+
+            tabInfo.addEventListener('click', () => {
+                tabInfo.classList.add('active');
+                tabControls.classList.remove('active');
+                contentInfo.classList.add('active');
+                contentControls.classList.remove('active');
+            });
+
+            tabControls.addEventListener('click', () => {
+                tabControls.classList.add('active');
+                tabInfo.classList.remove('active');
+                contentControls.classList.add('active');
+                contentInfo.classList.remove('active');
             });
 
             let crustyCanReappear = false;

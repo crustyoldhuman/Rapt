@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Version>1.2.0</Version>
-		<FileVersion>1.2.0.0</FileVersion>
-		<AssemblyVersion>1.2.0.0</AssemblyVersion>
+		<Version>1.3.0</Version>
+		<FileVersion>1.3.0.0</FileVersion>
+		<AssemblyVersion>1.3.0.0</AssemblyVersion>
 		<Company>crustyoldhuman</Company>
 		<Authors>crustyoldhuman</Authors>
 		<PublisherName>CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493</PublisherName>
