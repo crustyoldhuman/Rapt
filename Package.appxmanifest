@@ -37,23 +37,41 @@
 			<uap:DefaultTile ShortName="Rapt" Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
 		  <uap:SplashScreen Image="Assets\SplashScreen.png" />
 	  </uap:VisualElements>
-	  <Extensions>
-		  <uap:Extension Category="windows.fileTypeAssociation">
-			  <uap:FileTypeAssociation Name="video">
-				  <uap:SupportedFileTypes>
-					  <uap:FileType>.mp4</uap:FileType>
-					  <uap:FileType>.mkv</uap:FileType>
-				  </uap:SupportedFileTypes>
-			  </uap:FileTypeAssociation>
-		  </uap:Extension>
-		  <uap:Extension Category="windows.fileTypeAssociation">
-			  <uap:FileTypeAssociation Name="subtitles">
-				  <uap:SupportedFileTypes>
-					  <uap:FileType>.srt</uap:FileType>
-				  </uap:SupportedFileTypes>
-			  </uap:FileTypeAssociation>
-		  </uap:Extension>
-	  </Extensions>
+		<Extensions>
+			<uap:Extension Category="windows.fileTypeAssociation">
+				<uap:FileTypeAssociation Name="video">
+					<uap:SupportedFileTypes>
+						<uap:FileType>.mp4</uap:FileType>
+						<uap:FileType>.mkv</uap:FileType>
+						<uap:FileType>.webm</uap:FileType>
+						<uap:FileType>.mov</uap:FileType>
+						<uap:FileType>.m4v</uap:FileType>
+						<uap:FileType>.avi</uap:FileType>
+					</uap:SupportedFileTypes>
+				</uap:FileTypeAssociation>
+			</uap:Extension>
+			<uap:Extension Category="windows.fileTypeAssociation">
+				<uap:FileTypeAssociation Name="audio">
+					<uap:SupportedFileTypes>
+						<uap:FileType>.mp3</uap:FileType>
+						<uap:FileType>.wav</uap:FileType>
+						<uap:FileType>.m4a</uap:FileType>
+						<uap:FileType>.flac</uap:FileType>
+						<uap:FileType>.aac</uap:FileType>
+						<uap:FileType>.ogg</uap:FileType>
+					</uap:SupportedFileTypes>
+				</uap:FileTypeAssociation>
+			</uap:Extension>
+			<uap:Extension Category="windows.fileTypeAssociation">
+				<uap:FileTypeAssociation Name="subtitles">
+					<uap:SupportedFileTypes>
+						<uap:FileType>.srt</uap:FileType>
+						<uap:FileType>.vtt</uap:FileType>
+						<uap:FileType>.ass</uap:FileType>
+					</uap:SupportedFileTypes>
+				</uap:FileTypeAssociation>
+			</uap:Extension>
+		</Extensions>
   </Application>
 </Applications>
 
