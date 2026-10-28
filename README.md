@@ -13,7 +13,7 @@ Rapt is a native Windows desktop application OR standalone HTML5 video player fo
 
 ## Why This Exists
 
-Most modern players flex on compatibility, but obscure file types are a rarity. Instead, Rapt is focused on the viewing experience. Rapt Video Player is a streamlined, zero-configuration utility that brings modern, immersive quality-of-life features to your local offline media such as Ambient Glow and the simple, yet classy, audio spectrum visualizer. It instantly triggers hardware enhancements like RTX Video Super Resolution (VSR) right out of the box, letting you enjoy upscaled video without digging through complex settings.
+Most popular players flex on compatibility, but obscure file types are a rarity. Instead, Rapt is focused on the viewing experience. Rapt Video Player is a streamlined, zero-configuration utility that brings modern, immersive quality-of-life features to your local offline media such as Ambient Glow and the simple, yet classy, audio spectrum visualizer. It instantly triggers hardware enhancements like RTX Video Super Resolution (VSR) right out of the box, letting you enjoy upscaled video without digging through complex settings.
 
 <p align="center"><img width="500" alt="VSREasePromo" src="https://github.com/user-attachments/assets/5df9f8f2-e52f-47fc-adbe-23de531bd2c8" /></p>
 
