@@ -50,7 +50,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 
 - **Responsive Default Audio Visualizer:** See your audio dance and react in a gorgeous, smooth spectrum visualizer whenever audio is played. Bonus: Supports the "Glow" feature for an even more dynamic effect.
 
-<p align="center"><img width="800" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/fb3fb7bb-8bfc-4fa2-84ac-38497eba832c" /></p>
+<p align="center"><img width="600" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/fb3fb7bb-8bfc-4fa2-84ac-38497eba832c" /></p>
 
 - **Advanced Subtitle Engine:**
 
