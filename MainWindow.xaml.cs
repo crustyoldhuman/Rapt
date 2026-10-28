@@ -16,7 +16,7 @@ namespace Rapt
 {
 	public sealed partial class MainWindow : Window
 	{
-		private string? _pendingFilePath;
+		private readonly List<string> _pendingFilePaths = new();
 		private bool _isPageReady = false;
 		private CancellationTokenSource? _subtitleCts;
 		private readonly Dictionary<string, string> _fileMap = new(StringComparer.OrdinalIgnoreCase);
@@ -196,12 +196,111 @@ namespace Rapt
 			}
 		}
 
-		public void LoadInitialFile(string filePath)
+		public void LoadInitialFiles(IEnumerable<string> filePaths)
 		{
-			_pendingFilePath = filePath;
-			if (_isPageReady)
+			foreach (var path in filePaths)
 			{
-				_ = ProcessExternalFileAsync(filePath);
+				string cleanPath = path.Trim('\"', '\'');
+				if (!string.IsNullOrWhiteSpace(cleanPath))
+				{
+					_pendingFilePaths.Add(cleanPath);
+				}
+			}
+
+			if (_isPageReady && _pendingFilePaths.Count > 0)
+			{
+				_ = ProcessBatchAsync(new List<string>(_pendingFilePaths));
+				_pendingFilePaths.Clear();
+			}
+		}
+
+		private async Task ProcessBatchAsync(List<string> filePaths)
+		{
+			var droppedFiles = new JsonArray();
+
+			foreach (string filePath in filePaths)
+			{
+				if (!File.Exists(filePath)) continue;
+
+				string fileName = Path.GetFileName(filePath);
+				_fileMap[fileName] = filePath;
+				string ext = Path.GetExtension(fileName);
+
+				if (ext.Equals(".srt", StringComparison.OrdinalIgnoreCase))
+				{
+					string srtContent = await File.ReadAllTextAsync(filePath);
+					droppedFiles.Add(new JsonObject
+					{
+						["name"] = fileName,
+						["type"] = "text/plain",
+						["srtContent"] = srtContent
+					});
+				}
+				else
+				{
+					string mimeType = "application/octet-stream";
+					if (ext.Equals(".mp4", StringComparison.OrdinalIgnoreCase)) mimeType = "video/mp4";
+					else if (ext.Equals(".webm", StringComparison.OrdinalIgnoreCase)) mimeType = "video/webm";
+					else if (ext.Equals(".mkv", StringComparison.OrdinalIgnoreCase)) mimeType = "video/x-matroska";
+					else if (ext.Equals(".mp3", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/mpeg";
+					else if (ext.Equals(".wav", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/wav";
+					else if (ext.Equals(".ogg", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/ogg";
+					else if (ext.Equals(".flac", StringComparison.OrdinalIgnoreCase)) mimeType = "audio/flac";
+
+					string encodedFileName = Uri.EscapeDataString(fileName);
+					string cacheBuster = "?t=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+					droppedFiles.Add(new JsonObject
+					{
+						["name"] = fileName,
+						["type"] = mimeType,
+						["isVirtual"] = true,
+						["videoUrl"] = $"https://video.rapt/{encodedFileName}{cacheBuster}",
+						["audioUrl"] = $"https://audio.rapt/{encodedFileName}{cacheBuster}"
+					});
+				}
+			}
+
+			if (droppedFiles.Count > 0)
+			{
+				var payload = new JsonObject
+				{
+					["type"] = "BATCH_PROCESS_FILES",
+					["files"] = droppedFiles
+				};
+				SendBridgeMessage(payload.ToJsonString());
+
+				string? firstVideoName = null;
+				foreach (var f in droppedFiles)
+				{
+					string fn = f?["name"]?.ToString() ?? "";
+					if (!fn.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
+					{
+						firstVideoName = fn;
+						break;
+					}
+				}
+
+				if (firstVideoName != null && _fileMap.TryGetValue(firstVideoName, out string? videoPath))
+				{
+					_subtitleCts?.Cancel();
+					_subtitleCts?.Dispose();
+					_subtitleCts = new CancellationTokenSource();
+					var token = _subtitleCts.Token;
+
+					string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(videoPath, token);
+					if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
+					{
+						var srtPayload = new JsonObject
+						{
+							["type"] = "LOAD_SRT",
+							["videoName"] = firstVideoName,
+							["srtName"] = Path.ChangeExtension(firstVideoName, ".srt"),
+							["srtContent"] = extractedSrt
+						};
+						SendBridgeMessage(srtPayload.ToJsonString());
+					}
+				}
 			}
 		}
 
@@ -386,8 +485,16 @@ namespace Rapt
 					try
 					{
 						string msg = e.TryGetWebMessageAsString();
-						if (msg != null && msg.StartsWith("LOG:"))
+
+						if (msg != null && msg.Contains("\"type\":\"BRIDGE_READY\""))
 						{
+							_isPageReady = true;
+
+							if (_pendingFilePaths.Count > 0)
+							{
+								_ = ProcessBatchAsync(new List<string>(_pendingFilePaths));
+								_pendingFilePaths.Clear();
+							}
 							return;
 						}
 
@@ -534,12 +641,7 @@ namespace Rapt
 				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
 				PlayerWebView.Source = new Uri("https://app.rapt/index.html?isNative=1");
 
-				_isPageReady = true;
-				if (_pendingFilePath != null)
-				{
-					_ = ProcessExternalFileAsync(_pendingFilePath);
-					_pendingFilePath = null;
-				}
+				// _isPageReady is deferred until BRIDGE_READY is received from JS
 			}
 			catch (Exception)
 			{

@@ -2709,12 +2709,13 @@
             }
 
             document.addEventListener('click', function(e) {
-            const isOverControlBar = controlBar.contains(e.target);
-            const isOverBottomBar = bottomControlBar.contains(e.target);
-            const isOverPlaylist = playlistPanel.contains(e.target) || playlistHandle.contains(e.target);
-            const isOverInfo = infoPopupOverlay.contains(e.target) || infoLink.contains(e.target);
-            const isOverOverlay = playOverlay.contains(e.target);
-            const isOverSub = customSubContainer.contains(e.target);
+            const path = e.composedPath();
+            const isOverControlBar = path.includes(controlBar);
+            const isOverBottomBar = path.includes(bottomControlBar);
+            const isOverPlaylist = path.includes(playlistPanel) || path.includes(playlistHandle);
+            const isOverInfo = path.includes(infoPopupOverlay) || path.includes(infoLink);
+            const isOverOverlay = path.includes(playOverlay);
+            const isOverSub = path.includes(customSubContainer);
 
             if (isOverControlBar || isOverBottomBar || isOverPlaylist || isOverInfo || isOverOverlay || isOverSub) {
             return;
@@ -3299,8 +3300,13 @@
 
             // Bridge listener for WinUI 3 payload handling when XAML DragOverlay intercepts the native drop
             if (window.chrome && window.chrome.webview) {
+                function sendLog(text) {
+                    window.chrome.webview.postMessage("LOG:" + text);
+                }
+                
                 window.chrome.webview.addEventListener('message', e => {
                     try {
+                        sendLog("Received Bridge Message: " + e.data);
                         let msg = JSON.parse(e.data);
                         if (msg.type === 'DRAG_ENTER') {
                             document.body.classList.add('drag-over');
@@ -3329,9 +3335,17 @@
                                 audioUrl: msg.audioUrl
                             };
                             let idx = playlistFiles.findIndex(f => f.name === msg.fileName);
-                            if (idx === -1) playlistFiles.push(vFile);
+                            if (idx === -1) {
+                                playlistFiles.push(vFile);
+                                idx = playlistFiles.length - 1;
+                            }
                             renderPlaylist();
-                            processVideoFiles([vFile], true);
+                            
+                            if (!window.lastLoadMediaTime || Date.now() - window.lastLoadMediaTime > 500) {
+                                allowNextVideoAutoplay = true;
+                                playPlaylistItem(idx);
+                            }
+                            window.lastLoadMediaTime = Date.now();
                         } else if (msg.type === 'BATCH_PROCESS_FILES') {
                             let filesToProcess = [];
                             msg.files.forEach(f => {
@@ -3347,6 +3361,7 @@
                         }
                     } catch (err) {}
                 });
+                window.chrome.webview.postMessage(JSON.stringify({ type: 'BRIDGE_READY' }));
             }
         </script>
 
