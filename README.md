@@ -46,6 +46,8 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 
 - **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your page height and scales the video to utilize the maximum available screen real estate.
 
+- **Drag & Drop loading, and "Open with..." explorer support:** (Windows app only) Integrated with Windows so you can set it as the default program or open files with it specifically. 
+
 - **Responsive Default Audio Visualizer:** See your audio dance and react in a gorgeous, smooth spectrum visualizer whenever audio is played. Bonus: Supports the "Glow" feature for an even more dynamic effect.
 
 <p align="center"><img width="800" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/fb3fb7bb-8bfc-4fa2-84ac-38497eba832c" /></p>
