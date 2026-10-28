@@ -82,8 +82,8 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 ## How to Use
 
 **Windows App Version (Recommended):**
-1. Download the Windows App from the [Microsoft Store Page](https://github.com/crustyoldhuman/Rapt/releases).
-2. Install the application and click "Run".
+1. Download the Windows App from the [Microsoft Store Page](https://apps.microsoft.com/detail/9P074TF9RTJ2), or the Rapt Setup file under Assets for the [Current Release](https://github.com/crustyoldhuman/Rapt/releases)
+2. Install the application or run the installer and follow the instructions there, then launch Rapt.
 3. Click "Load Media" in the top toolbar and select a `.mp4` or `.mkv` file to play it in Rapt, or drag and drop media files into the application window. 
 
 **Standalone HTML Version:**
