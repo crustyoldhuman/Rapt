@@ -11,29 +11,15 @@ namespace Rapt
 {
 	public static partial class RaptStartup
 	{
-		public static void LogStartup(string msg)
-		{
-			try
-			{
-				string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt");
-				System.IO.Directory.CreateDirectory(dir);
-				System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "Rapt_Startup.log"), $"[{DateTime.Now:O}] {msg}\n");
-			}
-			catch { }
-		}
-
 		[STAThread]
 		static int Main()
 		{
-			LogStartup("=================================");
-			LogStartup("Program.Main started. Command Line: " + Environment.CommandLine);
 			try
 			{
 				return DoMain();
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				LogStartup($"CRITICAL CRASH: {ex}");
 				return -1;
 			}
 		}
@@ -42,10 +28,8 @@ namespace Rapt
 		static int DoMain()
 		{
 			WinRT.ComWrappersSupport.InitializeComWrappers();
-			LogStartup("ComWrappers initialized.");
 
 			bool isRedirect = DecideRedirection();
-			LogStartup($"DecideRedirection returned: {isRedirect}");
 
 			if (!isRedirect)
 			{
@@ -63,33 +47,26 @@ namespace Rapt
 
 		private static bool DecideRedirection()
 		{
-			LogStartup("Fetching Activation Args...");
 			AppActivationArguments args = AppInstance.GetCurrent().GetActivatedEventArgs();
-			LogStartup("Registering AppInstance...");
 			AppInstance keyInstance = AppInstance.FindOrRegisterForKey("RaptMainInstance");
 
 			if (keyInstance.IsCurrent)
 			{
-				LogStartup("This is the PRIMARY instance.");
 				return false;
 			}
 			else
 			{
-				LogStartup("This is a SECONDARY instance. Sending payload via Pipe...");
 				try
 				{
 					using var client = new System.IO.Pipes.NamedPipeClientStream(".", "RaptSingleInstancePipe", System.IO.Pipes.PipeDirection.Out);
 					client.Connect(2000);
 					using var writer = new System.IO.StreamWriter(client) { AutoFlush = true };
 					writer.WriteLine(string.Join("|", Environment.GetCommandLineArgs()));
-					LogStartup("Pipe payload sent successfully.");
 				}
-				catch (Exception ex)
+				catch (Exception)
 				{
-					LogStartup($"Pipe transmission failed: {ex.Message}");
 				}
 
-				LogStartup("Redirecting activation to foreground primary window...");
 				RedirectActivationTo(args, keyInstance);
 				return true;
 			}
