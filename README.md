@@ -68,7 +68,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 - **Cherries on top:**
   * Scroll-wheel support for volume, size, and cropping values
   * Loop toggling for background media
-  * Auto-hiding, distraction-free UI
+  * Auto-hiding, distraction-free UI & mouse cursor
   * Checks GitHub for new version on startup (when installed with the setup program or when using a saved `.html` file).
  
 ## Requirements
