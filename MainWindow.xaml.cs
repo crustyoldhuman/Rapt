@@ -33,6 +33,9 @@ namespace Rapt
 		[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
 		public struct POINT { public int X; public int Y; }
 
+		[System.Runtime.InteropServices.LibraryImport("dwmapi.dll")]
+		private static partial int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
 		private bool _isNativeCursorHidden = false;
 		private DateTime _cursorHideTime = DateTime.MinValue;
 		private POINT _hidePosition;
@@ -51,13 +54,18 @@ namespace Rapt
 			this.ExtendsContentIntoTitleBar = true;
 			this.SetTitleBar(AppTitleBar);
 
+			var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+			int DWMWA_BORDER_COLOR = 34;
+			int borderColor = 0x00000000; // 0x00BBGGRR formatting for Black (#000000)
+			DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, 4);
+
 			var titleBar = this.AppWindow.TitleBar;
 			titleBar.ButtonBackgroundColor = Colors.Black;
-			titleBar.ButtonForegroundColor = Colors.White;
+			titleBar.ButtonForegroundColor = Color.FromArgb(255, 85, 255, 0);
 			titleBar.ButtonHoverBackgroundColor = Color.FromArgb(255, 50, 50, 50);
-			titleBar.ButtonHoverForegroundColor = Colors.White;
+			titleBar.ButtonHoverForegroundColor = Color.FromArgb(255, 85, 255, 0);
 			titleBar.ButtonInactiveBackgroundColor = Colors.Black;
-			titleBar.ButtonInactiveForegroundColor = Colors.Gray;
+			titleBar.ButtonInactiveForegroundColor = Color.FromArgb(128, 85, 255, 0);
 
 			PlayerWebView.AllowDrop = true;
 			PlayerWebView.DragEnter += PlayerWebView_DragEnter;
