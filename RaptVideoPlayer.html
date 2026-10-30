@@ -1347,8 +1347,10 @@
             }
 
             if (savedGlow !== null) {
-            glowSlider.value = savedGlow;
+                glowSlider.value = savedGlow;
             }
+
+            manageAmbientState();
 
             seekSlider.disabled = true;
             seekSlider.value = 0;
