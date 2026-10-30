@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Version>1.3.0</Version>
-		<FileVersion>1.3.0.0</FileVersion>
-		<AssemblyVersion>1.3.0.0</AssemblyVersion>
+		<Version>1.3.1</Version>
+		<FileVersion>1.3.1.0</FileVersion>
+		<AssemblyVersion>1.3.1.0</AssemblyVersion>
 		<Company>crustyoldhuman</Company>
 		<Authors>crustyoldhuman</Authors>
 		<PublisherName>CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493</PublisherName>
@@ -10,9 +10,11 @@
 		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
 		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+		<Configurations>Debug;Release;DebugUnpackaged;DebugUnpackaged</Configurations>
+		<WindowsPackageType Condition="'$(Configuration)' == 'DebugUnpackaged'">None</WindowsPackageType>
+		<WindowsPackageType Condition="'$(WindowsPackageType)' == ''">MSIX</WindowsPackageType>
 		<StartupObject>Rapt.RaptStartup</StartupObject>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-		<StartupObject>Rapt.RaptStartup</StartupObject>
+		<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 		<RootNamespace>Rapt</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
@@ -83,8 +85,8 @@
 
   <!-- Publish Properties -->
 	<PropertyGroup>
-		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'DebugUnpackaged'">False</PublishReadyToRun>
+		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug' and '$(Configuration)' != 'DebugUnpackaged'">True</PublishReadyToRun>
 		<PublishTrimmed>False</PublishTrimmed>
 		<PackageIcon></PackageIcon>
 		<ApplicationIcon>RaptIcon.ico</ApplicationIcon>

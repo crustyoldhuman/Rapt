@@ -14,13 +14,28 @@ using Windows.UI;
 
 namespace Rapt
 {
+	[System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763.0")]
 	public sealed partial class MainWindow : Window
 	{
-		private readonly List<string> _pendingFilePaths = new();
+		private readonly List<string> _pendingFilePaths = [];
 		private bool _isPageReady = false;
 		private CancellationTokenSource? _subtitleCts;
 		private readonly Dictionary<string, string> _fileMap = new(StringComparer.OrdinalIgnoreCase);
 		private readonly string _playlistFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "playlist.json");
+
+		[System.Runtime.InteropServices.LibraryImport("user32.dll")]
+		private static partial int ShowCursor([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] bool bShow);
+
+		[System.Runtime.InteropServices.LibraryImport("user32.dll")]
+		[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+		private static partial bool GetCursorPos(out POINT lpPoint);
+
+		[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+		public struct POINT { public int X; public int Y; }
+
+		private bool _isNativeCursorHidden = false;
+		private DateTime _cursorHideTime = DateTime.MinValue;
+		private POINT _hidePosition;
 
 		public MainWindow()
 		{
@@ -52,6 +67,11 @@ namespace Rapt
 			DragOverlay.DragLeave += DragOverlay_DragLeave;
 			DragOverlay.DragOver += PlayerWebView_DragOver;
 			DragOverlay.Drop += PlayerWebView_Drop;
+
+			DragOverlay.PointerMoved += WakeCursor;
+			DragOverlay.PointerPressed += WakeCursor;
+			DragOverlay.PointerWheelChanged += WakeCursor;
+			AppTitleBar.PointerEntered += WakeCursor;
 
 			InitializeWebViewAsync();
 		}
@@ -161,38 +181,6 @@ namespace Rapt
 					["files"] = droppedFiles
 				};
 				SendBridgeMessage(payload.ToJsonString());
-
-				string? firstVideoName = null;
-				foreach (var f in droppedFiles)
-				{
-					string fn = f?["name"]?.ToString() ?? "";
-					if (!fn.EndsWith(".srt", StringComparison.OrdinalIgnoreCase))
-					{
-						firstVideoName = fn;
-						break;
-					}
-				}
-
-				if (firstVideoName != null && _fileMap.TryGetValue(firstVideoName, out string? videoPath))
-				{
-					_subtitleCts?.Cancel();
-					_subtitleCts?.Dispose();
-					_subtitleCts = new CancellationTokenSource();
-					var token = _subtitleCts.Token;
-
-					string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(videoPath, token);
-					if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
-					{
-						var srtPayload = new JsonObject
-						{
-							["type"] = "LOAD_SRT",
-							["videoName"] = firstVideoName,
-							["srtName"] = Path.ChangeExtension(firstVideoName, ".srt"),
-							["srtContent"] = extractedSrt
-						};
-						SendBridgeMessage(srtPayload.ToJsonString());
-					}
-				}
 			}
 		}
 
@@ -209,7 +197,7 @@ namespace Rapt
 
 			if (_isPageReady && _pendingFilePaths.Count > 0)
 			{
-				_ = ProcessBatchAsync(new List<string>(_pendingFilePaths));
+				_ = ProcessBatchAsync([.. _pendingFilePaths]);
 				_pendingFilePaths.Clear();
 			}
 		}
@@ -486,13 +474,44 @@ namespace Rapt
 					{
 						string msg = e.TryGetWebMessageAsString();
 
+						if (msg != null && msg.StartsWith("LOG:"))
+						{
+							System.Diagnostics.Debug.WriteLine($"[JS] {msg[4..]}");
+							return;
+						}
+
+						if (msg != null && msg.Contains("\"type\":\"HIDE_CURSOR\""))
+						{
+							System.Diagnostics.Debug.WriteLine("[C#] HIDE_CURSOR message received from JS.");
+							if (!_isNativeCursorHidden)
+							{
+								GetCursorPos(out _hidePosition);
+								_cursorHideTime = DateTime.UtcNow;
+
+								// WinUI 3 intercepts OS ShowCursor commands with its own input stack.
+								// The native workaround to hide a cursor is assigning a Disposed InputSystemCursor to the ProtectedCursor property.
+								var hiddenCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
+								hiddenCursor.Dispose();
+								typeof(Microsoft.UI.Xaml.UIElement).GetProperty("ProtectedCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(DragOverlay, hiddenCursor);
+
+								DragOverlay.Visibility = Visibility.Visible;
+								_isNativeCursorHidden = true;
+								System.Diagnostics.Debug.WriteLine("[C#] DragOverlay shown with Disposed ProtectedCursor.");
+							}
+							else
+							{
+								System.Diagnostics.Debug.WriteLine("[C#] HIDE_CURSOR ignored: _isNativeCursorHidden is already true.");
+							}
+							return;
+						}
+
 						if (msg != null && msg.Contains("\"type\":\"BRIDGE_READY\""))
 						{
 							_isPageReady = true;
 
 							if (_pendingFilePaths.Count > 0)
 							{
-								_ = ProcessBatchAsync(new List<string>(_pendingFilePaths));
+								_ = ProcessBatchAsync([.. _pendingFilePaths]);
 								_pendingFilePaths.Clear();
 							}
 							return;
@@ -686,29 +705,58 @@ namespace Rapt
 				["audioUrl"] = virtualAudioUrl
 			};
 			SendBridgeMessage(mediaPayload.ToJsonString());
-
-			_subtitleCts?.Cancel();
-			_subtitleCts?.Dispose();
-			_subtitleCts = new CancellationTokenSource();
-			var token = _subtitleCts.Token;
-
-			string? extractedSrt = await SubtitleExtractor.ExtractSrtAsync(filePath, token);
-			if (!token.IsCancellationRequested && !string.IsNullOrWhiteSpace(extractedSrt))
-			{
-				var srtPayload = new JsonObject
-				{
-					["type"] = "LOAD_SRT",
-					["videoName"] = fileName,
-					["srtName"] = Path.ChangeExtension(fileName, ".srt"),
-					["srtContent"] = extractedSrt
-				};
-				SendBridgeMessage(srtPayload.ToJsonString());
-			}
 		}
 
 		private void SendBridgeMessage(string json)
 		{
 			PlayerWebView.CoreWebView2.PostWebMessageAsString(json);
+		}
+
+		private void WakeCursor(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+		{
+			if (_isNativeCursorHidden)
+			{
+				double elapsedMs = (DateTime.UtcNow - _cursorHideTime).TotalMilliseconds;
+				if (elapsedMs > 150)
+				{
+					bool isSenderDragOverlay = object.ReferenceEquals(sender, DragOverlay) || (sender is FrameworkElement fe && fe.Name == "DragOverlay");
+					System.Diagnostics.Debug.WriteLine($"[C#] WakeCursor evaluating > 150ms. Sender: {sender?.GetType().Name}. isSenderDragOverlay: {isSenderDragOverlay}");
+
+					if (isSenderDragOverlay && e != null)
+					{
+						bool gotPos = GetCursorPos(out POINT currentPos);
+						if (gotPos)
+						{
+							int diffX = Math.Abs(currentPos.X - _hidePosition.X);
+							int diffY = Math.Abs(currentPos.Y - _hidePosition.Y);
+							System.Diagnostics.Debug.WriteLine($"[C#] WakeCursor position check. Current: {currentPos.X},{currentPos.Y}. Hidden at: {_hidePosition.X},{_hidePosition.Y}. Diff: {diffX},{diffY}");
+
+							if (diffX < 5 && diffY < 5)
+							{
+								System.Diagnostics.Debug.WriteLine("[C#] WakeCursor BLOCKED: Mouse is physically stationary (<5px). Returning.");
+								return; // Block synthetic layout events when mouse is physically stationary
+							}
+						}
+						else
+						{
+							System.Diagnostics.Debug.WriteLine("[C#] WakeCursor GetCursorPos failed.");
+						}
+					}
+
+					System.Diagnostics.Debug.WriteLine($"[C#] WakeCursor executing unhide. Elapsed: {elapsedMs:F1}ms");
+
+					var arrowCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
+					typeof(Microsoft.UI.Xaml.UIElement).GetProperty("ProtectedCursor", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.SetValue(DragOverlay, arrowCursor);
+
+					_isNativeCursorHidden = false;
+					DragOverlay.Visibility = Visibility.Collapsed;
+					System.Diagnostics.Debug.WriteLine("[C#] DragOverlay.Visibility set to Collapsed.");
+				}
+				else
+				{
+					System.Diagnostics.Debug.WriteLine($"[C#] WakeCursor ignored: Triggered too soon ({elapsedMs:F1}ms < 150ms) after hide event.");
+				}
+			}
 		}
 	}
 }

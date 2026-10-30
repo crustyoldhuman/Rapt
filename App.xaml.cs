@@ -64,14 +64,14 @@ namespace Rapt
 									string possiblePath = pipeArgs[1].Trim('\"', '\'');
 									if (System.IO.File.Exists(possiblePath) && !possiblePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 									{
-										((MainWindow)m_window).LoadInitialFiles(new[] { possiblePath });
+										((MainWindow)m_window).LoadInitialFiles([possiblePath]);
 									}
 									else if (pipeArgs.Length > 2)
 									{
 										string combinedPath = string.Join(" ", pipeArgs, 1, pipeArgs.Length - 1).Trim('\"', '\'');
 										if (System.IO.File.Exists(combinedPath) && !combinedPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 										{
-											((MainWindow)m_window).LoadInitialFiles(new[] { combinedPath });
+											((MainWindow)m_window).LoadInitialFiles([combinedPath]);
 										}
 									}
 								}
@@ -133,7 +133,7 @@ namespace Rapt
 						string possiblePath = launchArgs.Arguments.Trim('\"', '\'');
 						if (System.IO.File.Exists(possiblePath) && !possiblePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 						{
-							((MainWindow)m_window!).LoadInitialFiles(new[] { possiblePath });
+							((MainWindow)m_window!).LoadInitialFiles([possiblePath]);
 							fileLoaded = true;
 						}
 					}
@@ -148,14 +148,14 @@ namespace Rapt
 					string possiblePath = cmdArgs[1].Trim('\"', '\'');
 					if (System.IO.File.Exists(possiblePath) && !possiblePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 					{
-						((MainWindow)m_window!).LoadInitialFiles(new[] { possiblePath });
+						((MainWindow)m_window!).LoadInitialFiles([possiblePath]);
 					}
 					else if (cmdArgs.Length > 2)
 					{
 						string combinedPath = string.Join(" ", cmdArgs, 1, cmdArgs.Length - 1).Trim('\"', '\'');
 						if (System.IO.File.Exists(combinedPath) && !combinedPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 						{
-							((MainWindow)m_window!).LoadInitialFiles(new[] { combinedPath });
+							((MainWindow)m_window!).LoadInitialFiles([combinedPath]);
 						}
 					}
 				}

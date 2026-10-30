@@ -26,6 +26,12 @@
             body.drag-over {
                 background-color: #1a1a1a;
             }
+            html.cursor-hidden,
+            html.cursor-hidden *,
+            body.cursor-hidden,
+            body.cursor-hidden * {
+                cursor: none !important;
+            }
             .controls {
                 position: fixed;
                 top: 20px;
@@ -40,7 +46,7 @@
                 align-items: center;
                 justify-content: center;
                 z-index: 100;
-                transition: opacity 0.4s ease, visibility 0.4s ease;
+                transition: none;
             }
             .controls.hidden {
                 opacity: 0;
@@ -63,7 +69,7 @@
                 align-items: center;
                 justify-content: center;
                 z-index: 100;
-                transition: opacity 0.4s ease, visibility 0.4s ease;
+                transition: none;
                 width: 80%;
                 max-width: 900px;
             }
@@ -1022,7 +1028,8 @@
         </div>
 
         <script>
-            const APP_VERSION = "1.3.0.0"; // Update this with each release
+            const APP_VERSION = "1.3.1.0"; // Update this with each release
+            const CURSOR_HIDE_DELAY_MS = 1500; // Change this value to adjust mouse disappear time (in milliseconds)
             const videoFileInput = document.getElementById('videoFileInput');
             const videoPlayer = document.getElementById('videoPlayer');
             const audioPlayer = document.getElementById('audioPlayer');
@@ -1061,39 +1068,39 @@
             const updateLink = document.getElementById('updateLink');
 
             function checkForUpdates() {
-                fetch('https://api.github.com/repos/crustyoldhuman/Rapt/releases/latest')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data && data.tag_name) {
-                            const latestVersion = data.tag_name.replace(/[^0-9.]/g, '');
-                            const currentParts = APP_VERSION.split('.').map(Number);
-                            const latestParts = latestVersion.split('.').map(Number);
-                            let hasUpdate = false;
+            fetch('https://api.github.com/repos/crustyoldhuman/Rapt/releases/latest')
+            .then(response => response.json())
+            .then(data => {
+            if (data && data.tag_name) {
+            const latestVersion = data.tag_name.replace(/[^0-9.]/g, '');
+            const currentParts = APP_VERSION.split('.').map(Number);
+            const latestParts = latestVersion.split('.').map(Number);
+            let hasUpdate = false;
 
-                            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
-                                const c = currentParts[i] || 0;
-                                const l = latestParts[i] || 0;
-                                if (l > c) { hasUpdate = true; break; }
-                                if (l < c) { break; }
-                            }
+            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+            const c = currentParts[i] || 0;
+            const l = latestParts[i] || 0;
+            if (l > c) { hasUpdate = true; break; }
+            if (l < c) { break; }
+            }
 
-                            if (hasUpdate) {
-                                updateLink.href = data.html_url;
-                                setTimeout(() => {
-                                    updatePopup.classList.add('show');
-                                }, 1500); // 1.5 seconds delay before animating in
-                            }
-                        }
-                    })
-                    .catch(() => { /* Fail silently if offline or blocked */ });
+            if (hasUpdate) {
+            updateLink.href = data.html_url;
+            setTimeout(() => {
+            updatePopup.classList.add('show');
+            }, 1500); // 1.5 seconds delay before animating in
+            }
+            }
+            })
+            .catch(() => { /* Fail silently if offline or blocked */ });
             }
 
             updatePopupClose.addEventListener('click', () => {
-                updatePopup.classList.remove('show');
+            updatePopup.classList.remove('show');
             });
 
             updateLink.addEventListener('click', () => {
-                updatePopup.classList.remove('show');
+            updatePopup.classList.remove('show');
             });
 
             checkForUpdates();
@@ -1136,8 +1143,8 @@
             const glowIntensityGroup = document.getElementById('glowIntensityGroup');
             const glowSlider = document.getElementById('glowSlider');
             const ambientCanvas = document.getElementById('ambientCanvas');
-            const ambientCtx = ambientCanvas.getContext('2d', { alpha: false });
-            
+            const ambientCtx = ambientCanvas.getContext('2d', { alpha: false, willReadFrequently: true });
+
             const visualizerCanvas = document.getElementById('visualizerCanvas');
             const visualizerCtx = visualizerCanvas.getContext('2d');
             let analyser, dataArray, visAnimId;
@@ -1153,19 +1160,19 @@
             let isFitToPageEnabled = false;
 
             function setFitToPage(enabled, applyScale = true) {
-                isFitToPageEnabled = enabled;
-                localStorage.setItem('rapt_fitToPage', enabled);
-                if (enabled) {
-                    btnFit.style.backgroundColor = '#23A620';
-                    btnFit.style.color = '#142229';
-                    if (applyScale && nativeWidth && nativeHeight) {
-                        sizeSlider.value = currentFitScale;
-                        updateVideoSize(currentFitScale);
-                    }
-                } else {
-                    btnFit.style.backgroundColor = '#142229';
-                    btnFit.style.color = '#23A620';
-                }
+            isFitToPageEnabled = enabled;
+            localStorage.setItem('rapt_fitToPage', enabled);
+            if (enabled) {
+            btnFit.style.backgroundColor = '#23A620';
+            btnFit.style.color = '#142229';
+            if (applyScale && nativeWidth && nativeHeight) {
+            sizeSlider.value = currentFitScale;
+            updateVideoSize(currentFitScale);
+            }
+            } else {
+            btnFit.style.backgroundColor = '#142229';
+            btnFit.style.color = '#23A620';
+            }
             }
 
             // --- CUSTOM DRAGGABLE SUBTITLE LOGIC ---
@@ -1187,18 +1194,22 @@
             customSubContainer.style.transform = `translateX(-50%) translate(${subOffsetX}px, ${subOffsetY}px)`;
             });
             window.addEventListener('mouseup', () => {
+            if (isDraggingSub) {
             isDraggingSub = false;
             customSubContainer.style.cursor = 'grab';
+            localStorage.setItem('rapt_subOffsetX', subOffsetX);
+            localStorage.setItem('rapt_subOffsetY', subOffsetY);
+            }
             });
 
             function escapeSubHtml(str) {
             return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;')
-                .replace(/&lt;(\/?(i|b|u))&gt;/gi, '<$1>');
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/&lt;(\/?(i|b|u))&gt;/gi, '<$1>');
             }
 
             function renderCustomSubtitles(e) {
@@ -1291,6 +1302,7 @@
             let nativeWidth = 640;
             let nativeHeight = 360;
             let hideTimeout;
+            let isCursorHidden = false;
             let currentFitScale = 1;
             let audioCtx;
             let gainNode;
@@ -1300,22 +1312,37 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('isNative') === '1') {
-                const introText = document.getElementById('introText');
-                if (introText) {
-                    introText.innerText = 'Double-click anywhere, or drag and drop a media file.';
-                }
+            const introText = document.getElementById('introText');
+            if (introText) {
+            introText.innerText = 'Double-click anywhere, or drag and drop a media file.';
+            }
             }
 
             const savedAmbient = localStorage.getItem('rapt_ambientEnabled');
             const savedGlow = localStorage.getItem('rapt_glowIntensity');
             const savedFit = localStorage.getItem('rapt_fitToPage');
+            const savedSubSize = localStorage.getItem('rapt_subSize');
+            const savedSubOffsetX = localStorage.getItem('rapt_subOffsetX');
+            const savedSubOffsetY = localStorage.getItem('rapt_subOffsetY');
+
+            if (savedSubSize !== null) {
+            subSizeSlider.value = savedSubSize;
+            subScaleValue.innerText = savedSubSize;
+            subStyle.innerHTML = `video::cue { font-size: ${savedSubSize}em !important; font-weight: normal !important; } #customSubContainer { font-size: ${savedSubSize * 24}px !important; }`;
+            }
+
+            if (savedSubOffsetX !== null && savedSubOffsetY !== null) {
+            subOffsetX = parseFloat(savedSubOffsetX);
+            subOffsetY = parseFloat(savedSubOffsetY);
+            customSubContainer.style.transform = `translateX(-50%) translate(${subOffsetX}px, ${subOffsetY}px)`;
+            }
 
             ambientToggle.checked = savedAmbient === 'true';
             isAmbientEnabled = ambientToggle.checked;
             glowIntensityGroup.style.display = isAmbientEnabled ? 'block' : 'none';
 
             if (savedFit === 'true') {
-                setFitToPage(true, false);
+            setFitToPage(true, false);
             }
 
             if (savedGlow !== null) {
@@ -1328,11 +1355,11 @@
 
             const isChromium = !!window.chrome || navigator.userAgent.toLowerCase().includes('chrome');
             const isWebView2 = window.chrome && window.chrome.webview;
-            
+
             if (isChromium && !isWebView2) {
-                volumeSlider.max = "1";
+            volumeSlider.max = "1";
             } else {
-                volumeSlider.max = "2.5";
+            volumeSlider.max = "2.5";
             }
 
             // Playlist hint animation
@@ -1586,14 +1613,14 @@
             currentAudioUrl = null;
 
             if (videoFile.isVirtual) {
-                // Use the C# Virtual Host mappings for DragOverlay drop support
-                currentVideoUrl = videoFile.videoUrl;
-                currentAudioUrl = videoFile.audioUrl;
+            // Use the C# Virtual Host mappings for DragOverlay drop support
+            currentVideoUrl = videoFile.videoUrl;
+            currentAudioUrl = videoFile.audioUrl;
             } else {
-                // THE VSR FIX: Generate two distinct URLs so Chromium spins up isolated media pipelines.
-                // The video pipeline stays hardware-accelerated (VSR), while the audio pipeline gets hooked for volume.
-                currentVideoUrl = URL.createObjectURL(videoFile);
-                currentAudioUrl = URL.createObjectURL(videoFile);
+            // THE VSR FIX: Generate two distinct URLs so Chromium spins up isolated media pipelines.
+            // The video pipeline stays hardware-accelerated (VSR), while the audio pipeline gets hooked for volume.
+            currentVideoUrl = URL.createObjectURL(videoFile);
+            currentAudioUrl = URL.createObjectURL(videoFile);
             }
 
             videoPlayer._isReadyHandled = false;
@@ -1614,10 +1641,10 @@
 
             videoPlayer.load();
             audioPlayer.load();
-            
+
             if (allowNextVideoAutoplay) {
-                videoPlayer.play().catch(() => {});
-                audioPlayer.play().catch(() => {});
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
             }
             } else if (srtFile && videoPlayer.src) {
             loadSrt(srtFile);
@@ -1631,6 +1658,7 @@
             const val = parseFloat(e.target.value).toFixed(2);
             subScaleValue.innerText = val;
             subStyle.innerHTML = `video::cue { font-size: ${val}em !important; font-weight: normal !important; } #customSubContainer { font-size: ${val * 24}px !important; }`;
+            localStorage.setItem('rapt_subSize', val);
             });
 
             subSizeSlider.addEventListener('wheel', function(e) {
@@ -1830,11 +1858,11 @@
 
             const dpr = window.devicePixelRatio || 1;
             let targetScale = (window.innerHeight * 0.70 * dpr) / nativeHeight;
-            
+
             if (isFitToPageEnabled) {
-                targetScale = currentFitScale;
+            targetScale = currentFitScale;
             }
-            
+
             const clampedScale = Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
 
             sizeSlider.value = clampedScale;
@@ -1856,27 +1884,27 @@
             `;
             document.getElementById('overlayFilename').textContent = filenameDisplay.textContent;
             playOverlay.classList.add('ready');
-            
+
             if (videoPlayer.paused) {
-                playOverlay.classList.add('visible');
+            playOverlay.classList.add('visible');
             }
 
             manageAmbientState();
 
             // Try to autoplay audio. If video is present or audio is blocked, pause and show overlay.
             const startPlayback = () => {
-                try {
-                    if (!audioCtx) initAudio();
-                    if (audioCtx.state === 'suspended') {
-                        audioCtx.resume().catch(() => {});
-                    }
-                    if (videoPlayer.videoWidth > 0 && !allowNextVideoAutoplay) {
-                        throw new Error("Autoplay disabled for video files");
-                    }
-                    allowNextVideoAutoplay = false;
-                    audioPlayer.play().catch(() => {});
-                    videoPlayer.play().catch(() => {});
-                } catch (error) {
+            try {
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+            }
+            if (videoPlayer.videoWidth > 0 && !allowNextVideoAutoplay) {
+            throw new Error("Autoplay disabled for video files");
+            }
+            allowNextVideoAutoplay = false;
+            audioPlayer.play().catch(() => {});
+            videoPlayer.play().catch(() => {});
+            } catch (error) {
             allowNextVideoAutoplay = false;
             videoPlayer.pause();
             audioPlayer.pause();
@@ -1890,12 +1918,12 @@
             };
             startPlayback();
             }
-            
+
             videoPlayer.addEventListener('loadedmetadata', handleMediaReady);
             audioPlayer.addEventListener('loadedmetadata', function() {
-                if (videoPlayer.readyState === 0) {
-                    handleMediaReady();
-                }
+            if (videoPlayer.readyState === 0) {
+            handleMediaReady();
+            }
             });
 
             function initAudio() {
@@ -1936,8 +1964,8 @@
 
             videoPlayer.addEventListener('waiting', function() {
             if (!audioPlayer.paused && videoPlayer.videoWidth > 0) {
-                audioPlayer._isBufferingPause = true;
-                audioPlayer.pause();
+            audioPlayer._isBufferingPause = true;
+            audioPlayer.pause();
             }
             });
 
@@ -1970,16 +1998,16 @@
             function manageAmbientState() {
             cancelAnimationFrame(ambientAnimId);
             if (!isAmbientEnabled || !videoPlayer._hasStartedPlaying) {
-                ambientCanvas.classList.add('hidden');
-                ambientCanvas.style.opacity = '';
+            ambientCanvas.classList.add('hidden');
+            ambientCanvas.style.opacity = '';
             } else if (isAudioFile ? audioPlayer.readyState > 0 : videoPlayer.readyState > 0) {
-                ambientCanvas.classList.remove('hidden');
-                ambientCanvas.style.opacity = glowSlider.value / 100;
-                isFirstFrame = true;
-                drawAmbientFrame();
-                if (!videoPlayer.paused) {
-                    drawAmbientLoop();
-                }
+            ambientCanvas.classList.remove('hidden');
+            ambientCanvas.style.opacity = glowSlider.value / 100;
+            isFirstFrame = true;
+            drawAmbientFrame();
+            if (!videoPlayer.paused) {
+            drawAmbientLoop();
+            }
             }
             }
 
@@ -1995,133 +2023,133 @@
             resizeAmbientCanvas();
 
             function resizeVisualizer() {
-                visualizerCanvas.width = visualizerCanvas.clientWidth;
-                visualizerCanvas.height = visualizerCanvas.clientHeight;
+            visualizerCanvas.width = visualizerCanvas.clientWidth;
+            visualizerCanvas.height = visualizerCanvas.clientHeight;
             }
             window.addEventListener('resize', resizeVisualizer);
 
             function drawVisualizer() {
-                if (!isAudioFile || videoPlayer.paused || !analyser) return;
-                visAnimId = requestAnimationFrame(drawVisualizer);
+            if (!isAudioFile || videoPlayer.paused || !analyser) return;
+            visAnimId = requestAnimationFrame(drawVisualizer);
 
-                const bufferLength = analyser.frequencyBinCount;
-                if (!dataArray || dataArray.length !== bufferLength) {
-                    dataArray = new Uint8Array(bufferLength);
-                }
-                analyser.getByteFrequencyData(dataArray);
+            const bufferLength = analyser.frequencyBinCount;
+            if (!dataArray || dataArray.length !== bufferLength) {
+            dataArray = new Uint8Array(bufferLength);
+            }
+            analyser.getByteFrequencyData(dataArray);
 
-                visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
-                
-                const numBars = 120; // Fixed bar distribution across the full width
-                const barWidth = visualizerCanvas.width / numBars;
-                let x = 0;
+            visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
 
-                let currentPeak = 10;
-                for (let b = bufferLength - 1; b >= 0; b--) {
-                    if (dataArray[b] > 0) {
-                        currentPeak = b;
-                        break;
-                    }
-                }
-                
-                // Track highest bin seen to dynamically stretch the spectrum (auto-zooms through low-pass filters)
-                if (!visualizerCanvas._highestActiveBin) visualizerCanvas._highestActiveBin = Math.floor(bufferLength * 0.3);
-                if (currentPeak > visualizerCanvas._highestActiveBin) {
-                    visualizerCanvas._highestActiveBin = currentPeak;
-                } else {
-                    visualizerCanvas._highestActiveBin -= 0.5; // Smooth decay
-                }
+            const numBars = 120; // Fixed bar distribution across the full width
+            const barWidth = visualizerCanvas.width / numBars;
+            let x = 0;
 
-                // Increased minBin to 6 to account for the new higher resolution bins (skipping ~0-32Hz inaudible rumble)
-                const minBin = 6; 
-                const maxBin = Math.max(Math.floor(bufferLength * 0.15), Math.floor(visualizerCanvas._highestActiveBin)); 
-                
-                let nextBin = minBin;
+            let currentPeak = 10;
+            for (let b = bufferLength - 1; b >= 0; b--) {
+            if (dataArray[b] > 0) {
+            currentPeak = b;
+            break;
+            }
+            }
 
-                for(let i = 0; i < numBars; i++) {
-                    const currentBin = nextBin;
-                    nextBin = Math.floor(minBin * Math.pow(maxBin / minBin, (i + 1) / numBars));
-                    if (nextBin <= currentBin) nextBin = currentBin + 1;
-                    
-                    // Average-pooling: smooths out noise spikes to prevent rapid vibrating, especially in boosted treble bands
-                    let sumVal = 0;
-                    let binCount = 0;
-                    for (let b = currentBin; b < nextBin && b < bufferLength; b++) {
-                        sumVal += dataArray[b];
-                        binCount++;
-                    }
-                    let avgVal = binCount > 0 ? sumVal / binCount : 0;
-                    
-                    let intensity = avgVal / 255;
-                    
-                    // EQ visual scaling: boost highs to counteract natural bass dominance and prevent disproportionate spikes
-                    const eqMultiplier = 0.7 + (i / numBars) * 1.5; 
-                    // Steeper exponential curve (2.4) expands dynamic range, forcing low volumes down and requiring true peaks to max out
-                    let scaledIntensity = Math.min(1, Math.pow(intensity, 2.4) * eqMultiplier);
-                    
-                    const barHeight = Math.max(2, scaledIntensity * visualizerCanvas.height); // Enforce 2px minimum baseline so canvas is always filled
-                    
-                    // Extreme dynamic color shifts for heavy visual hits
-                    const baseHue = 240 - ((i / numBars) * 240); // Full spectrum: Blue (240) for bass descending to Red (0) for treble
-                    const peakPunch = Math.pow(scaledIntensity, 1.8); // Exponential curve triggers intense flash only on hard hits
-                    const hue = baseHue - (peakPunch * 50); // Dynamic hue shift "heats up" notes on hard impacts
-                    const saturation = 30 + (scaledIntensity * 70); 
-                    const lightness = 10 + (peakPunch * 75); // Spikes to brilliant brightness on transients
-                    
-                    const reversedX = visualizerCanvas.width - x - barWidth;
-                    const currentBarWidth = barWidth - 1;
-                    const currentBarX = reversedX;
-                    const currentBarY = visualizerCanvas.height - barHeight;
+            // Track highest bin seen to dynamically stretch the spectrum (auto-zooms through low-pass filters)
+            if (!visualizerCanvas._highestActiveBin) visualizerCanvas._highestActiveBin = Math.floor(bufferLength * 0.3);
+            if (currentPeak > visualizerCanvas._highestActiveBin) {
+            visualizerCanvas._highestActiveBin = currentPeak;
+            } else {
+            visualizerCanvas._highestActiveBin -= 0.5; // Smooth decay
+            }
 
-                    visualizerCtx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-                    visualizerCtx.fillRect(currentBarX, currentBarY, currentBarWidth, barHeight);
-                    
-                    visualizerCtx.strokeStyle = '#000000';
-                    visualizerCtx.lineWidth = 1;
-                    visualizerCtx.strokeRect(currentBarX, currentBarY, currentBarWidth, barHeight);
+            // Increased minBin to 6 to account for the new higher resolution bins (skipping ~0-32Hz inaudible rumble)
+            const minBin = 6;
+            const maxBin = Math.max(Math.floor(bufferLength * 0.15), Math.floor(visualizerCanvas._highestActiveBin));
 
-                    x += barWidth;
-                }
+            let nextBin = minBin;
+
+            for(let i = 0; i < numBars; i++) {
+            const currentBin = nextBin;
+            nextBin = Math.floor(minBin * Math.pow(maxBin / minBin, (i + 1) / numBars));
+            if (nextBin <= currentBin) nextBin = currentBin + 1;
+
+            // Average-pooling: smooths out noise spikes to prevent rapid vibrating, especially in boosted treble bands
+            let sumVal = 0;
+            let binCount = 0;
+            for (let b = currentBin; b < nextBin && b < bufferLength; b++) {
+            sumVal += dataArray[b];
+            binCount++;
+            }
+            let avgVal = binCount > 0 ? sumVal / binCount : 0;
+
+            let intensity = avgVal / 255;
+
+            // EQ visual scaling: boost highs to counteract natural bass dominance and prevent disproportionate spikes
+            const eqMultiplier = 0.7 + (i / numBars) * 1.5;
+            // Steeper exponential curve (2.4) expands dynamic range, forcing low volumes down and requiring true peaks to max out
+            let scaledIntensity = Math.min(1, Math.pow(intensity, 2.4) * eqMultiplier);
+
+            const barHeight = Math.max(2, scaledIntensity * visualizerCanvas.height); // Enforce 2px minimum baseline so canvas is always filled
+
+            // Extreme dynamic color shifts for heavy visual hits
+            const baseHue = 240 - ((i / numBars) * 240); // Full spectrum: Blue (240) for bass descending to Red (0) for treble
+            const peakPunch = Math.pow(scaledIntensity, 1.8); // Exponential curve triggers intense flash only on hard hits
+            const hue = baseHue - (peakPunch * 50); // Dynamic hue shift "heats up" notes on hard impacts
+            const saturation = 30 + (scaledIntensity * 70);
+            const lightness = 10 + (peakPunch * 75); // Spikes to brilliant brightness on transients
+
+            const reversedX = visualizerCanvas.width - x - barWidth;
+            const currentBarWidth = barWidth - 1;
+            const currentBarX = reversedX;
+            const currentBarY = visualizerCanvas.height - barHeight;
+
+            visualizerCtx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            visualizerCtx.fillRect(currentBarX, currentBarY, currentBarWidth, barHeight);
+
+            visualizerCtx.strokeStyle = '#000000';
+            visualizerCtx.lineWidth = 1;
+            visualizerCtx.strokeRect(currentBarX, currentBarY, currentBarWidth, barHeight);
+
+            x += barWidth;
+            }
             }
 
             function drawAmbientFrame() {
-                if (isAudioFile) {
-                    if (audioPlayer.readyState === 0) return;
-                    const now = performance.now();
-                    lastAmbientTime = now;
+            if (isAudioFile) {
+            if (audioPlayer.readyState === 0) return;
+            const now = performance.now();
+            lastAmbientTime = now;
 
-                    ambientCtx.globalAlpha = 1.0;
-                    ambientCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
-                    
-                    // The ambient canvas is 120vw/120vh and offset by -10vw/-10vh.
-                    // The visualizer is 60vw/30vh, centered at 20vw/35vh.
-                    // This maps the exact bounds so the glow originates exactly from the bars.
-                    const dw = ambientCanvas.width * 0.5;
-                    const dh = ambientCanvas.height * 0.25;
-                    const dx = ambientCanvas.width * 0.25;
-                    const dy = ambientCanvas.height * 0.375;
+            ambientCtx.globalAlpha = 1.0;
+            ambientCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
 
-                    // Stretch vertically to create a smooth, rounded blob of color instead of distinct blurry bars
-                    const stretchH = dh * 1.5;
-                    const baselineY = dy + dh;
+            // The ambient canvas is 120vw/120vh and offset by -10vw/-10vh.
+            // The visualizer is 60vw/30vh, centered at 20vw/35vh.
+            // This maps the exact bounds so the glow originates exactly from the bars.
+            const dw = ambientCanvas.width * 0.5;
+            const dh = ambientCanvas.height * 0.25;
+            const dx = ambientCanvas.width * 0.25;
+            const dy = ambientCanvas.height * 0.375;
 
-                    // Draw upward aura (anchored at baseline, expanding upwards)
-                    ambientCtx.drawImage(visualizerCanvas, dx, baselineY - stretchH, dw, stretchH);
-                    
-                    // Draw downward aura (anchored at baseline, expanding downwards)
-                    ambientCtx.save();
-                    ambientCtx.translate(0, baselineY);
-                    ambientCtx.scale(1, -1);
-                    ambientCtx.drawImage(visualizerCanvas, dx, -stretchH, dw, stretchH);
-                    ambientCtx.restore();
-                    
-                    isFirstFrame = false;
-                    return;
-                }
+            // Stretch vertically to create a smooth, rounded blob of color instead of distinct blurry bars
+            const stretchH = dh * 1.5;
+            const baselineY = dy + dh;
 
-                if (!nativeWidth || !nativeHeight || videoPlayer.readyState === 0) return;
+            // Draw upward aura (anchored at baseline, expanding upwards)
+            ambientCtx.drawImage(visualizerCanvas, dx, baselineY - stretchH, dw, stretchH);
 
-                const cropTopPx = parseFloat(cropTop.value) || 0;
+            // Draw downward aura (anchored at baseline, expanding downwards)
+            ambientCtx.save();
+            ambientCtx.translate(0, baselineY);
+            ambientCtx.scale(1, -1);
+            ambientCtx.drawImage(visualizerCanvas, dx, -stretchH, dw, stretchH);
+            ambientCtx.restore();
+
+            isFirstFrame = false;
+            return;
+            }
+
+            if (!nativeWidth || !nativeHeight || videoPlayer.readyState === 0) return;
+
+            const cropTopPx = parseFloat(cropTop.value) || 0;
             const cropBotPx = parseFloat(cropBottom.value) || 0;
             const cropLeftPx = parseFloat(cropLeft.value) || 0;
             const cropRightPx = parseFloat(cropRight.value) || 0;
@@ -2167,34 +2195,34 @@
             let dt = now - lastAmbientTime;
             lastAmbientTime = now;
 
-            // Prevent massive jumps if the tab was backgrounded or video just unpaused
             if (dt > 1000) dt = 16.66;
-
-            // tau (time constant in milliseconds). Increase this value to slow down the glow shift (e.g., 800-1200ms).
             const tau = 700;
             let alpha = 1 - Math.exp(-dt / tau);
+            if (alpha < 0.035) alpha = 0.035;
 
             ambientCtx.globalAlpha = isFirstFrame ? 1.0 : alpha;
 
+            const edgeW = Math.max(1, Math.round(srcW * 0.03));
+            const edgeH = Math.max(1, Math.round(srcH * 0.03));
             const sx1 = srcX;
             const sy1 = srcY;
-            const sx2 = srcX + srcW - 1;
-            const sy2 = srcY + srcH - 1;
+            const sx2 = srcX + srcW - edgeW;
+            const sy2 = srcY + srcH - edgeH;
 
             if (dhTop > 0) {
-            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, 1, destX1, destY1, dwLeft, dhTop);
-            if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, 1, destX2, destY1, dwCenter, dhTop);
-            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, 1, destX3, destY1, dwRight, dhTop);
+            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, edgeW, edgeH, destX1, destY1, dwLeft, dhTop);
+            if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, edgeH, destX2, destY1, dwCenter, dhTop);
+            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, edgeW, edgeH, destX3, destY1, dwRight, dhTop);
             }
             if (dhCenter > 0) {
-            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, srcH, destX1, destY2, dwLeft, dhCenter);
+            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, edgeW, srcH, destX1, destY2, dwLeft, dhCenter);
             if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, srcH, destX2, destY2, dwCenter, dhCenter);
-            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, srcH, destX3, destY2, dwRight, dhCenter);
+            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, edgeW, srcH, destX3, destY2, dwRight, dhCenter);
             }
             if (dhBottom > 0) {
-            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, 1, 1, destX1, destY3, dwLeft, dhBottom);
-            if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, srcW, 1, destX2, destY3, dwCenter, dhBottom);
-            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy2, 1, 1, destX3, destY3, dwRight, dhBottom);
+            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, edgeW, edgeH, destX1, destY3, dwLeft, dhBottom);
+            if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, srcW, edgeH, destX2, destY3, dwCenter, dhBottom);
+            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy2, edgeW, edgeH, destX3, destY3, dwRight, dhBottom);
             }
             isFirstFrame = false;
             }
@@ -2232,31 +2260,31 @@
             let playlistLockTimer = null;
 
             playlistHandle.addEventListener('click', () => {
-                playlistPanel.classList.toggle('open');
-                playlistHandle.classList.remove('stay-visible');
-                playlistPanel.classList.remove('bounce-hint');
-                playlistHandle.classList.remove('bounce-hint');
+            playlistPanel.classList.toggle('open');
+            playlistHandle.classList.remove('stay-visible');
+            playlistPanel.classList.remove('bounce-hint');
+            playlistHandle.classList.remove('bounce-hint');
             });
 
             window.addEventListener('mousemove', (e) => {
-                if (e.clientX === 0 && e.clientY === 0) return;
+            if (e.clientX === 0 && e.clientY === 0) return;
 
-                const isOverPlaylist = playlistPanel.contains(e.target) || playlistHandle.contains(e.target);
+            const isOverPlaylist = playlistPanel.contains(e.target) || playlistHandle.contains(e.target);
 
-                if (e.clientX <= window.innerWidth * 0.15) {
-                    playlistHandle.classList.add('show-indicator');
-                    if (e.clientX <= window.innerWidth * 0.03) {
-                        playlistPanel.classList.add('open');
-                        playlistHandle.classList.remove('stay-visible');
-                        playlistPanel.classList.remove('bounce-hint');
-                        playlistHandle.classList.remove('bounce-hint');
-                    }
-                } else {
-                    playlistHandle.classList.remove('show-indicator');
-                    if (!isPlaylistLockedOpen && !isOverPlaylist) {
-                        playlistPanel.classList.remove('open');
-                    }
-                }
+            if (e.clientX <= window.innerWidth * 0.15) {
+            playlistHandle.classList.add('show-indicator');
+            if (e.clientX <= window.innerWidth * 0.03) {
+            playlistPanel.classList.add('open');
+            playlistHandle.classList.remove('stay-visible');
+            playlistPanel.classList.remove('bounce-hint');
+            playlistHandle.classList.remove('bounce-hint');
+            }
+            } else {
+            playlistHandle.classList.remove('show-indicator');
+            if (!isPlaylistLockedOpen && !isOverPlaylist) {
+            playlistPanel.classList.remove('open');
+            }
+            }
             });
 
             btnPlaylistAdd.addEventListener('click', () => playlistAddInput.click());
@@ -2344,15 +2372,15 @@
             renderPlaylist();
 
             if (!e.target._isRestoring) {
-                isPlaylistLockedOpen = true;
-                playlistPanel.classList.add('open');
-                clearTimeout(playlistLockTimer);
-                playlistLockTimer = setTimeout(() => {
-                    isPlaylistLockedOpen = false;
-                    if (!playlistPanel.matches(':hover')) {
-                        playlistPanel.classList.remove('open');
-                    }
-                }, 2500);
+            isPlaylistLockedOpen = true;
+            playlistPanel.classList.add('open');
+            clearTimeout(playlistLockTimer);
+            playlistLockTimer = setTimeout(() => {
+            isPlaylistLockedOpen = false;
+            if (!playlistPanel.matches(':hover')) {
+            playlistPanel.classList.remove('open');
+            }
+            }, 2500);
             }
             }
             e.target.value = '';
@@ -2360,7 +2388,7 @@
 
             function renderPlaylist() {
             btnPlaylistClear.disabled = playlistFiles.length === 0;
-            
+
             const showNav = playlistFiles.length > 1;
             btnPrev.style.display = showNav ? 'inline-flex' : 'none';
             btnNext.style.display = showNav ? 'inline-flex' : 'none';
@@ -2596,24 +2624,24 @@
             filesToProcess.push(playlistFiles[index].pairedSrt);
             }
             processVideoFiles(filesToProcess, true);
-            
+
             if (typeof resetIdleTimer === 'function') resetIdleTimer();
             }
 
             function playNext() {
-                if (playlistFiles.length < 2) return;
-                allowNextVideoAutoplay = true;
-                let nextIndex = currentPlayIndex + 1;
-                if (nextIndex >= playlistFiles.length) nextIndex = 0; // Wrap around
-                playPlaylistItem(nextIndex);
+            if (playlistFiles.length < 2) return;
+            allowNextVideoAutoplay = true;
+            let nextIndex = currentPlayIndex + 1;
+            if (nextIndex >= playlistFiles.length) nextIndex = 0; // Wrap around
+            playPlaylistItem(nextIndex);
             }
 
             function playPrev() {
-                if (playlistFiles.length < 2) return;
-                allowNextVideoAutoplay = true;
-                let prevIndex = currentPlayIndex - 1;
-                if (prevIndex < 0) prevIndex = playlistFiles.length - 1; // Wrap around
-                playPlaylistItem(prevIndex);
+            if (playlistFiles.length < 2) return;
+            allowNextVideoAutoplay = true;
+            let prevIndex = currentPlayIndex - 1;
+            if (prevIndex < 0) prevIndex = playlistFiles.length - 1; // Wrap around
+            playPlaylistItem(prevIndex);
             }
 
             // --- SYNC ENGINE AND UI CONTROLS ---
@@ -2622,13 +2650,13 @@
             videoPlayer._hasStartedPlaying = true;
             videoPlayer.style.opacity = '1';
             customSubContainer.style.opacity = '1';
-            
+
             if (isAudioFile) {
-                visualizerCanvas.classList.remove('hidden');
-                resizeVisualizer();
-                drawVisualizer();
+            visualizerCanvas.classList.remove('hidden');
+            resizeVisualizer();
+            drawVisualizer();
             } else {
-                visualizerCanvas.classList.add('hidden');
+            visualizerCanvas.classList.add('hidden');
             }
             playOverlay.classList.remove('visible');
             document.getElementById('iconPlay').style.display = 'none';
@@ -2708,6 +2736,7 @@
             }, 2000);
             }
 
+            let clickTimer = null;
             document.addEventListener('click', function(e) {
             const path = e.composedPath();
             const isOverControlBar = path.includes(controlBar);
@@ -2722,6 +2751,8 @@
             }
 
             if (videoPlayer.readyState > 0 || audioPlayer.readyState > 0) {
+            if (e.detail === 1) {
+            clickTimer = setTimeout(() => {
             if (videoPlayer.paused && audioPlayer.paused) {
             videoPlayer.play().catch(() => {});
             audioPlayer.play().catch(() => {});
@@ -2731,13 +2762,20 @@
             audioPlayer.pause();
             showIndicator(false);
             }
+            }, 250);
+            }
             }
             });
 
             function triggerBrowse(e) {
             if (controlBar.contains(e.target) || bottomControlBar.contains(e.target) || (typeof playlistPanel !== 'undefined' && playlistPanel.contains(e.target)) || (typeof playlistHandle !== 'undefined' && playlistHandle.contains(e.target))) return;
+
+            clearTimeout(clickTimer);
+
             if (videoPlayer.readyState === 0) {
             videoFileInput.click();
+            } else {
+            btnFullscreen.click();
             }
             }
             document.addEventListener('dblclick', triggerBrowse);
@@ -2755,8 +2793,8 @@
             btnNext.addEventListener('click', playNext);
 
             if ('mediaSession' in navigator) {
-                navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-                navigator.mediaSession.setActionHandler('nexttrack', playNext);
+            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+            navigator.mediaSession.setActionHandler('nexttrack', playNext);
             }
 
             btnPlayPause.addEventListener('click', () => {
@@ -2941,11 +2979,11 @@
             const radialMask = `radial-gradient(${radiusX}px ${radiusY}px at ${centerX}% ${centerY}%, black 0%, black ${innerStop}%, transparent 100%)`;
 
             if (isAudioFile) {
-                ambientCanvas.style.webkitMaskImage = 'none';
-                ambientCanvas.style.maskImage = 'none';
+            ambientCanvas.style.webkitMaskImage = 'none';
+            ambientCanvas.style.maskImage = 'none';
             } else {
-                ambientCanvas.style.webkitMaskImage = radialMask;
-                ambientCanvas.style.maskImage = radialMask;
+            ambientCanvas.style.webkitMaskImage = radialMask;
+            ambientCanvas.style.maskImage = radialMask;
             }
             ambientCanvas.style.webkitMaskComposite = '';
             ambientCanvas.style.maskComposite = '';
@@ -2975,8 +3013,8 @@
             window.addEventListener('resize', () => {
             updateSliderMax();
             if (isFitToPageEnabled && nativeWidth && nativeHeight) {
-                sizeSlider.value = currentFitScale;
-                updateVideoSize(currentFitScale);
+            sizeSlider.value = currentFitScale;
+            updateVideoSize(currentFitScale);
             }
             });
 
@@ -3019,26 +3057,26 @@
             });
 
             volumeSlider.addEventListener('input', function(e) {
-                const val = parseFloat(e.target.value);
-                volumeValue.innerText = Math.round(val * 100);
+            const val = parseFloat(e.target.value);
+            volumeValue.innerText = Math.round(val * 100);
 
-                if (gainNode) {
-                    gainNode.gain.value = val;
-                } else {
-                    audioPlayer.volume = Math.min(1, val);
-                }
+            if (gainNode) {
+            gainNode.gain.value = val;
+            } else {
+            audioPlayer.volume = Math.min(1, val);
+            }
 
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+            if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+            }
 
-                if (val > 0 && isMuted) {
-                    isMuted = false;
-                    updateMuteUI(false);
-                } else if (val === 0 && !isMuted) {
-                    isMuted = true;
-                    updateMuteUI(true);
-                }
+            if (val > 0 && isMuted) {
+            isMuted = false;
+            updateMuteUI(false);
+            } else if (val === 0 && !isMuted) {
+            isMuted = true;
+            updateMuteUI(true);
+            }
             });
 
             volumeSlider.addEventListener('wheel', function(e) {
@@ -3058,13 +3096,22 @@
 
             // Force show the bottom control bar for volume feedback
             bottomControlBar.classList.remove('hidden');
-            document.body.style.cursor = 'default';
+            if (isCursorHidden) {
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Mouse movement detected in JS. Removing cursor-hidden classes.");
+            document.documentElement.classList.remove('cursor-hidden');
+            document.body.classList.remove('cursor-hidden');
+            isCursorHidden = false;
+            }
 
             clearTimeout(hideTimeout);
             hideTimeout = setTimeout(() => {
             bottomControlBar.classList.add('hidden');
-            document.body.style.cursor = 'none';
-            }, 1500);
+            if (!isCursorHidden) {
+            document.documentElement.classList.add('cursor-hidden');
+            document.body.classList.add('cursor-hidden');
+                isCursorHidden = true;
+            }
+            }, CURSOR_HIDE_DELAY_MS);
             }, { passive: false });
 
             btnFit.addEventListener('click', function() {
@@ -3077,83 +3124,98 @@
             const key = e.key.toLowerCase();
 
             if (e.code === 'Space' || key === 'k') {
-                e.preventDefault();
-                if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
-                    playPlaylistItem(0);
-                } else if ((videoPlayer.paused && videoPlayer.readyState > 0) || (audioPlayer.paused && audioPlayer.readyState > 0)) {
-                    videoPlayer.play().catch(() => {});
-                    audioPlayer.play().catch(() => {});
-                    showIndicator(true);
-                } else if (!videoPlayer.paused || !audioPlayer.paused) {
-                    videoPlayer.pause();
-                    audioPlayer.pause();
-                    showIndicator(false);
-                }
+            e.preventDefault();
+            if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
+            playPlaylistItem(0);
+            } else if ((videoPlayer.paused && videoPlayer.readyState > 0) || (audioPlayer.paused && audioPlayer.readyState > 0)) {
+            videoPlayer.play().catch(() => {});
+            audioPlayer.play().catch(() => {});
+            showIndicator(true);
+            } else if (!videoPlayer.paused || !audioPlayer.paused) {
+            videoPlayer.pause();
+            audioPlayer.pause();
+            showIndicator(false);
+            }
             } else if (e.code === 'ArrowLeft') {
-                e.preventDefault();
-                if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
-                    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
-                    audioPlayer.currentTime = videoPlayer.currentTime;
-                }
+            e.preventDefault();
+            if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+            videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
+            audioPlayer.currentTime = videoPlayer.currentTime;
+            }
             } else if (e.code === 'ArrowRight') {
-                e.preventDefault();
-                if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
-                    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
-                    audioPlayer.currentTime = videoPlayer.currentTime;
-                }
+            e.preventDefault();
+            if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+            videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
+            audioPlayer.currentTime = videoPlayer.currentTime;
+            }
             } else if (key === 'j') {
-                if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
-                    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
-                    audioPlayer.currentTime = videoPlayer.currentTime;
-                }
+            if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+            videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
+            audioPlayer.currentTime = videoPlayer.currentTime;
+            }
             } else if (key === 'l') {
-                if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
-                    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
-                    audioPlayer.currentTime = videoPlayer.currentTime;
-                }
+            if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+            videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
+            audioPlayer.currentTime = videoPlayer.currentTime;
+            }
             } else if (e.code === 'ArrowUp') {
-                e.preventDefault();
-                volumeSlider.stepUp(5);
-                volumeSlider.dispatchEvent(new Event('input'));
+            e.preventDefault();
+            volumeSlider.stepUp(5);
+            volumeSlider.dispatchEvent(new Event('input'));
             } else if (e.code === 'ArrowDown') {
-                e.preventDefault();
-                volumeSlider.stepDown(5);
-                volumeSlider.dispatchEvent(new Event('input'));
+            e.preventDefault();
+            volumeSlider.stepDown(5);
+            volumeSlider.dispatchEvent(new Event('input'));
             } else if (key === 'm') {
-                muteIcon.click();
+            muteIcon.click();
             } else if (key === 'f') {
-                btnFullscreen.click();
+            btnFullscreen.click();
             } else if (key === 'c') {
-                if (subSelect.options.length > 0) {
-                    if (subSelect.value === 'unload') {
-                        let targetVal = '0';
-                        for (let i = 0; i < subSelect.options.length; i++) {
-                            if (subSelect.options[i].value !== 'unload' && subSelect.options[i].value !== 'load') {
-                                targetVal = subSelect.options[i].value;
-                                break;
-                            }
-                        }
-                        subSelect.value = (previousSubSelection && previousSubSelection !== 'unload' && previousSubSelection !== 'load') ? previousSubSelection : targetVal;
-                    } else {
-                        subSelect.value = 'unload';
-                    }
-                    applySubtitleSelection();
-                }
+            if (subSelect.options.length > 0) {
+            if (subSelect.value === 'unload') {
+            let targetVal = '0';
+            for (let i = 0; i < subSelect.options.length; i++) {
+            if (subSelect.options[i].value !== 'unload' && subSelect.options[i].value !== 'load') {
+            targetVal = subSelect.options[i].value;
+            break;
+            }
+            }
+            subSelect.value = (previousSubSelection && previousSubSelection !== 'unload' && previousSubSelection !== 'load') ? previousSubSelection : targetVal;
+            } else {
+            subSelect.value = 'unload';
+            }
+            applySubtitleSelection();
+            }
             } else if (key === 'g') {
-                ambientToggle.click();
+            ambientToggle.click();
             } else if (key === 'r') {
-                btnLoop.click();
+            btnLoop.click();
             } else if (key === 'n') {
-                if (typeof playNext === 'function') playNext();
+            if (typeof playNext === 'function') playNext();
             } else if (key === 'p') {
-                if (typeof playPrev === 'function') playPrev();
+            if (typeof playPrev === 'function') playPrev();
             } else if (key === 't') {
-                btnFit.click();
+            btnFit.click();
             }
             });
 
+            let lastMouseX = -1;
+            let lastMouseY = -1;
+
             function resetIdleTimer(e) {
-            document.body.style.cursor = 'default';
+            if (e && e.type === 'mousemove') {
+            if (e.screenX === lastMouseX && e.screenY === lastMouseY) {
+            return;
+            }
+            lastMouseX = e.screenX;
+            lastMouseY = e.screenY;
+            }
+
+            if (isCursorHidden) {
+            document.documentElement.classList.remove('cursor-hidden');
+            document.body.classList.remove('cursor-hidden');
+            isCursorHidden = false;
+            }
             clearTimeout(hideTimeout);
 
             const isOverControlBar = e && controlBar.contains(e.target);
@@ -3182,19 +3244,41 @@
             }
 
             if (!isOverControlBar && !isOverBottomBar && !isOverPlaylist) {
-            // Wait 4 seconds on fresh load (!e), or 1.5 seconds during normal mouse movement
-            const delay = e ? 1500 : 4000;
-
             hideTimeout = setTimeout(() => {
+            if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0) return;
             controlBar.classList.add('hidden');
             bottomControlBar.classList.add('hidden');
-            document.body.style.cursor = 'none';
+            if (!isCursorHidden) {
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Idle timer expired in JS. Firing HIDE_CURSOR to C#.");
+            document.documentElement.classList.add('cursor-hidden');
+            document.body.classList.add('cursor-hidden');
+            isCursorHidden = true;
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(JSON.stringify({ type: 'HIDE_CURSOR' }));
+            }
             if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
-            }, delay);
+            }, CURSOR_HIDE_DELAY_MS);
             }
             }
 
             document.addEventListener('mousemove', resetIdleTimer);
+
+            // Do NOT cancel the idle timer if the mouse leaves the document bounds.
+            // On touchpads, lifting a finger fires mouseleave, which orphans the cursor if the timer is aborted.
+            document.addEventListener('mouseleave', () => {
+            if (isCursorHidden) {
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:JS mouseleave fired but ignored (synthetic event due to isCursorHidden).");
+            return; // Ignore synthetic mouseleave caused by DragOverlay intercepting hit-tests
+            }
+
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Mouse left document");
+            controlBar.classList.add('hidden');
+            bottomControlBar.classList.add('hidden');
+            });
+
+            document.addEventListener('mouseenter', () => {
+            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Mouse entered document");
+            });
+
             resetIdleTimer();
 
             document.addEventListener('mousedown', function(e) {
@@ -3211,7 +3295,6 @@
             if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay && !isOverPlaylist) {
             controlBar.classList.add('hidden');
             bottomControlBar.classList.add('hidden');
-            document.body.style.cursor = 'none';
             if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
             }
             });
@@ -3260,17 +3343,17 @@
             const contentControls = document.getElementById('contentControls');
 
             tabInfo.addEventListener('click', () => {
-                tabInfo.classList.add('active');
-                tabControls.classList.remove('active');
-                contentInfo.classList.add('active');
-                contentControls.classList.remove('active');
+            tabInfo.classList.add('active');
+            tabControls.classList.remove('active');
+            contentInfo.classList.add('active');
+            contentControls.classList.remove('active');
             });
 
             tabControls.addEventListener('click', () => {
-                tabControls.classList.add('active');
-                tabInfo.classList.remove('active');
-                contentControls.classList.add('active');
-                contentInfo.classList.remove('active');
+            tabControls.classList.add('active');
+            tabInfo.classList.remove('active');
+            contentControls.classList.add('active');
+            contentInfo.classList.remove('active');
             });
 
             let crustyCanReappear = false;
@@ -3300,68 +3383,68 @@
 
             // Bridge listener for WinUI 3 payload handling when XAML DragOverlay intercepts the native drop
             if (window.chrome && window.chrome.webview) {
-                function sendLog(text) {
-                    window.chrome.webview.postMessage("LOG:" + text);
-                }
-                
-                window.chrome.webview.addEventListener('message', e => {
-                    try {
-                        sendLog("Received Bridge Message: " + e.data);
-                        let msg = JSON.parse(e.data);
-                        if (msg.type === 'DRAG_ENTER') {
-                            document.body.classList.add('drag-over');
-                        } else if (msg.type === 'DRAG_LEAVE') {
-                            document.body.classList.remove('drag-over');
-                        } else if (msg.type === 'LOAD_SRT' && typeof loadSrt === 'function') {
-                            let blob = new Blob([msg.srtContent], { type: 'text/plain' });
-                            loadSrt(new File([blob], msg.srtName, { type: 'text/plain' }));
-                        } else if (msg.type === 'RESTORE_PLAYLIST') {
-                            playlistFiles = [];
-                            msg.items.forEach(name => {
-                                playlistFiles.push({
-                                    name: name,
-                                    type: "video/mp4",
-                                    isVirtual: true,
-                                    videoUrl: `https://video.rapt/${encodeURIComponent(name)}`,
-                                    audioUrl: `https://audio.rapt/${encodeURIComponent(name)}`
-                                });
-                            });
-                        } else if (msg.type === 'LOAD_MEDIA') {
-                            let vFile = {
-                                name: msg.fileName,
-                                type: "video/mp4",
-                                isVirtual: true,
-                                videoUrl: msg.videoUrl,
-                                audioUrl: msg.audioUrl
-                            };
-                            let idx = playlistFiles.findIndex(f => f.name === msg.fileName);
-                            if (idx === -1) {
-                                playlistFiles.push(vFile);
-                                idx = playlistFiles.length - 1;
-                            }
-                            renderPlaylist();
-                            
-                            if (!window.lastLoadMediaTime || Date.now() - window.lastLoadMediaTime > 500) {
-                                allowNextVideoAutoplay = true;
-                                playPlaylistItem(idx);
-                            }
-                            window.lastLoadMediaTime = Date.now();
-                        } else if (msg.type === 'BATCH_PROCESS_FILES') {
-                            let filesToProcess = [];
-                            msg.files.forEach(f => {
-                                if (f.srtContent !== undefined) {
-                                    let blob = new Blob([f.srtContent], { type: 'text/plain' });
-                                    let srtFile = new File([blob], f.name, { type: 'text/plain' });
-                                    filesToProcess.push(srtFile);
-                                } else {
-                                    filesToProcess.push(f);
-                                }
-                            });
-                            processVideoFiles(filesToProcess, false);
-                        }
-                    } catch (err) {}
-                });
-                window.chrome.webview.postMessage(JSON.stringify({ type: 'BRIDGE_READY' }));
+            function sendLog(text) {
+            window.chrome.webview.postMessage("LOG:" + text);
+            }
+
+            window.chrome.webview.addEventListener('message', e => {
+            try {
+            sendLog("Received Bridge Message: " + e.data);
+            let msg = JSON.parse(e.data);
+            if (msg.type === 'DRAG_ENTER') {
+            document.body.classList.add('drag-over');
+            } else if (msg.type === 'DRAG_LEAVE') {
+            document.body.classList.remove('drag-over');
+            } else if (msg.type === 'LOAD_SRT' && typeof loadSrt === 'function') {
+            let blob = new Blob([msg.srtContent], { type: 'text/plain' });
+            loadSrt(new File([blob], msg.srtName, { type: 'text/plain' }));
+            } else if (msg.type === 'RESTORE_PLAYLIST') {
+            playlistFiles = [];
+            msg.items.forEach(name => {
+            playlistFiles.push({
+            name: name,
+            type: "video/mp4",
+            isVirtual: true,
+            videoUrl: `https://video.rapt/${encodeURIComponent(name)}`,
+            audioUrl: `https://audio.rapt/${encodeURIComponent(name)}`
+            });
+            });
+            } else if (msg.type === 'LOAD_MEDIA') {
+            let vFile = {
+            name: msg.fileName,
+            type: "video/mp4",
+            isVirtual: true,
+            videoUrl: msg.videoUrl,
+            audioUrl: msg.audioUrl
+            };
+            let idx = playlistFiles.findIndex(f => f.name === msg.fileName);
+            if (idx === -1) {
+            playlistFiles.push(vFile);
+            idx = playlistFiles.length - 1;
+            }
+            renderPlaylist();
+
+            if (!window.lastLoadMediaTime || Date.now() - window.lastLoadMediaTime > 500) {
+            allowNextVideoAutoplay = true;
+            playPlaylistItem(idx);
+            }
+            window.lastLoadMediaTime = Date.now();
+            } else if (msg.type === 'BATCH_PROCESS_FILES') {
+            let filesToProcess = [];
+            msg.files.forEach(f => {
+            if (f.srtContent !== undefined) {
+            let blob = new Blob([f.srtContent], { type: 'text/plain' });
+            let srtFile = new File([blob], f.name, { type: 'text/plain' });
+            filesToProcess.push(srtFile);
+            } else {
+            filesToProcess.push(f);
+            }
+            });
+            processVideoFiles(filesToProcess, false);
+            }
+            } catch (err) {}
+            });
+            window.chrome.webview.postMessage(JSON.stringify({ type: 'BRIDGE_READY' }));
             }
         </script>
 
