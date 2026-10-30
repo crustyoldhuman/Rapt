@@ -1,4 +1,4 @@
-<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/b4cf3f6e-5cfc-4a11-9c0a-9fff3ea1403a" /></p>
+<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/7f640092-d0fd-499d-84cc-6966f70aca0b" /></p>
 
 # <p align="center">Rapt - Immersive Video Player with No-Fuss Super Sampling</p>
 
@@ -7,7 +7,7 @@
 -->
 Rapt is a native Windows desktop application OR standalone HTML5 video player for PC designed for dark room, immersive playback experience and to apply super resolution upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files with zero configuration, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/11abeb4a-3aca-43b5-8a3a-b642d15c1773" /></p>
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/2ceee020-ba40-4f60-9daf-dfd96d747408" /></p>
 
 ***Note:*** *Rapt is not intended for mobile devices.*
 
@@ -15,7 +15,7 @@ Rapt is a native Windows desktop application OR standalone HTML5 video player fo
 
 Most popular players flex on compatibility, but obscure file types are a rarity. Instead, Rapt is focused on the viewing experience. Rapt Video Player is a streamlined, zero-configuration utility that brings modern, immersive quality-of-life features to your local offline media such as Ambient Glow and the simple, yet classy, audio spectrum visualizer. It instantly triggers hardware enhancements like RTX Video Super Resolution (VSR) right out of the box, letting you enjoy upscaled video without digging through complex settings.
 
-<p align="center"><img width="500" alt="VSREasePromo" src="https://github.com/user-attachments/assets/5df9f8f2-e52f-47fc-adbe-23de531bd2c8" /></p>
+<p align="center"><img width="500" alt="VSREasePromo" src="https://github.com/user-attachments/assets/1c7e6eed-6e77-42a7-89ad-834a73be076d" /></p>
 
 Even if VLC VSR or MP-C works for you, if you just want to bring some videos to a friends house on a flash drive to watch on their PC or something you're still stuck bringing a whole portable media player setup or just giving up on super sampling on their computer. With this workaround, you can easily take advantage of anyone's fancy efficient GPU VSR without any setup fuss at all. The standalone `.html` Rapt player allows you to use any computers Super Resolution capable GPU to upscale a local video, without any setup or download needed.
 
@@ -36,7 +36,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 - **Video Scaling:** Because low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
 
 - **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
-<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/c209e1b8-64f6-412f-ab7c-4504e8b03daf" /></p>
+<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/88420e52-4124-4f93-aa4f-2e6d99bf399e" /></p>
   
 - **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and upscalers waste resources trying to process encoded black letterbox bars. Rapt lets you crop the edges in real-time to fix both of these problems.
   
@@ -50,7 +50,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 
 - **Responsive Default Audio Visualizer:** See your audio dance and react in a gorgeous, smooth spectrum visualizer whenever audio is played. Bonus: Supports the "Glow" feature for an even more dynamic effect.
 
-<p align="center"><img width="600" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/fb3fb7bb-8bfc-4fa2-84ac-38497eba832c" /></p>
+<p align="center"><img width="600" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/0eea605c-4c53-4f4d-8bec-2cfe622a4b53" /></p>
 
 - **Advanced Subtitle Engine:**
 
@@ -68,7 +68,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 - **Cherries on top:**
   * Scroll-wheel support for volume, size, and cropping values
   * Loop toggling for background media
-  * Auto-hiding, distraction-free UI
+  * Auto-hiding, distraction-free UI & mouse cursor
   * Checks GitHub for new version on startup (when installed with the setup program or when using a saved `.html` file).
  
 ## Requirements
