@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Web.WebView2.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
@@ -51,15 +52,20 @@ namespace Rapt
 				AppIconImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(iconPath));
 			}
 
-			this.ExtendsContentIntoTitleBar = true;
-			this.SetTitleBar(AppTitleBar);
-
 			var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+			int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+			int isDarkMode = 1;
+			DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref isDarkMode, 4);
+
 			int DWMWA_BORDER_COLOR = 34;
 			int borderColor = 0x00000000; // 0x00BBGGRR formatting for Black (#000000)
 			DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, 4);
 
+			this.SystemBackdrop = new MicaBackdrop();
+
 			var titleBar = this.AppWindow.TitleBar;
+			titleBar.ExtendsContentIntoTitleBar = true;
 			titleBar.ButtonBackgroundColor = Colors.Black;
 			titleBar.ButtonForegroundColor = Color.FromArgb(255, 85, 255, 0);
 			titleBar.ButtonHoverBackgroundColor = Color.FromArgb(255, 50, 50, 50);
