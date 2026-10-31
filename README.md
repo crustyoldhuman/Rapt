@@ -1,4 +1,4 @@
-<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/7f640092-d0fd-499d-84cc-6966f70aca0b" /></p>
+<p align="center"><img width="600" alt="Iconbanner" src="https://github.com/user-attachments/assets/3c30c257-1feb-4cdc-a15a-e7d8950184bf" /></p>
 
 # <p align="center">Rapt - Immersive Video Player with No-Fuss Super Sampling</p>
 
