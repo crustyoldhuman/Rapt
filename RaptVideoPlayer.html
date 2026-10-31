@@ -1880,16 +1880,49 @@
 
             videoPlayer.removeAttribute('controls');
 
-            overlayContent.innerHTML = `
-            <div id="overlayFilename" style="font-size: 14px; margin-bottom: 10px; font-weight: normal; opacity: 0.99; word-break: break-all; max-width: 95%;"></div>
-            <div class="play-icon">&#9658;</div>
-            <div class="play-text">Click or press space to play</div>
-            `;
-            document.getElementById('overlayFilename').textContent = filenameDisplay.textContent;
+            const fileName = filenameDisplay.textContent;
+            const savedTime = localStorage.getItem('rapt_resume_' + fileName);
+            const canResume = savedTime && parseFloat(savedTime) > 2 && parseFloat(savedTime) < videoPlayer.duration - 2;
+
+            if (canResume && !allowNextVideoAutoplay) {
+                overlayContent.innerHTML = `
+                <div id="overlayFilename" style="font-size: 14px; margin-bottom: 10px; font-weight: normal; opacity: 0.99; word-break: break-all; max-width: 95%;"></div>
+                <div class="play-text" style="margin-bottom: 15px;">Resume where you left off, or start over?</div>
+                <div style="display: flex; gap: 15px;">
+                    <button id="btnResumePlay" style="font-size: 16px; padding: 10px 20px;">Resume</button>
+                    <button id="btnStartOverPlay" style="font-size: 16px; padding: 10px 20px;">Start over</button>
+                </div>
+                `;
+                document.getElementById('overlayFilename').textContent = fileName;
+                
+                document.getElementById('btnResumePlay').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    videoPlayer.currentTime = parseFloat(savedTime);
+                    audioPlayer.currentTime = parseFloat(savedTime);
+                    videoPlayer.play().catch(() => {});
+                    audioPlayer.play().catch(() => {});
+                });
+                
+                document.getElementById('btnStartOverPlay').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    videoPlayer.currentTime = 0;
+                    audioPlayer.currentTime = 0;
+                    localStorage.removeItem('rapt_resume_' + fileName);
+                    videoPlayer.play().catch(() => {});
+                    audioPlayer.play().catch(() => {});
+                });
+            } else {
+                overlayContent.innerHTML = `
+                <div id="overlayFilename" style="font-size: 14px; margin-bottom: 10px; font-weight: normal; opacity: 0.99; word-break: break-all; max-width: 95%;"></div>
+                <div class="play-icon">&#9658;</div>
+                <div class="play-text">Click or press space to play</div>
+                `;
+                document.getElementById('overlayFilename').textContent = fileName;
+            }
             playOverlay.classList.add('ready');
 
             if (videoPlayer.paused) {
-            playOverlay.classList.add('visible');
+                playOverlay.classList.add('visible');
             }
 
             manageAmbientState();
@@ -1952,9 +1985,12 @@
             }
 
             videoPlayer.addEventListener('ended', function() {
-            if (loopMode === 1) return;
+                if (filenameDisplay.textContent) {
+                    localStorage.removeItem('rapt_resume_' + filenameDisplay.textContent);
+                }
+                if (loopMode === 1) return;
 
-            if (currentPlayIndex > -1) {
+                if (currentPlayIndex > -1) {
             if (currentPlayIndex + 1 < playlistFiles.length) {
             allowNextVideoAutoplay = true;
             playPlaylistItem(currentPlayIndex + 1);
@@ -2709,12 +2745,17 @@
             });
 
             playOverlay.addEventListener('click', function() {
-            if (videoPlayer.readyState > 0 || audioPlayer.readyState > 0) {
-            videoPlayer.play().catch(() => {});
-            audioPlayer.play().catch(() => {});
-            } else if (playlistFiles.length > 0) {
-            playPlaylistItem(0);
-            }
+                if (videoPlayer.readyState > 0 || audioPlayer.readyState > 0) {
+                    const btnResume = document.getElementById('btnResumePlay');
+                    if (btnResume) {
+                        btnResume.click();
+                    } else {
+                        videoPlayer.play().catch(() => {});
+                        audioPlayer.play().catch(() => {});
+                    }
+                } else if (playlistFiles.length > 0) {
+                    playPlaylistItem(0);
+                }
             });
 
             let indicatorTimeout;
@@ -2848,14 +2889,18 @@
             });
 
             videoPlayer.addEventListener('timeupdate', () => {
-            if (!seekSlider.isDragging) {
-            seekSlider.value = (videoPlayer.currentTime / videoPlayer.duration) * 100 || 0;
-            syncRangeFills();
-            }
-            timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+                if (!seekSlider.isDragging) {
+                    seekSlider.value = (videoPlayer.currentTime / videoPlayer.duration) * 100 || 0;
+                    syncRangeFills();
+                }
+                timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
 
-            // Anti-Drift Engine
-            if (!seekSlider.isDragging && !videoPlayer.paused && !audioPlayer.paused) {
+                if (videoPlayer.videoWidth > 0 && videoPlayer.currentTime > 0 && filenameDisplay.textContent) {
+                    localStorage.setItem('rapt_resume_' + filenameDisplay.textContent, videoPlayer.currentTime);
+                }
+
+                // Anti-Drift Engine
+                if (!seekSlider.isDragging && !videoPlayer.paused && !audioPlayer.paused) {
             if (Math.abs(videoPlayer.currentTime - audioPlayer.currentTime) > 0.15) {
             audioPlayer.currentTime = videoPlayer.currentTime;
             }
@@ -3098,10 +3143,9 @@
             volumeSlider.dispatchEvent(new Event('input'));
 
             // Force show the bottom control bar for volume feedback
-            bottomControlBar.classList.remove('hidden');
-            if (isCursorHidden) {
-            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Mouse movement detected in JS. Removing cursor-hidden classes.");
-            document.documentElement.classList.remove('cursor-hidden');
+                bottomControlBar.classList.remove('hidden');
+                if (isCursorHidden) {
+                    document.documentElement.classList.remove('cursor-hidden');
             document.body.classList.remove('cursor-hidden');
             isCursorHidden = false;
             }
@@ -3122,19 +3166,22 @@
             });
 
             document.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-            const key = e.key.toLowerCase();
+                const key = e.key.toLowerCase();
 
-            if (e.code === 'Space' || key === 'k') {
-            e.preventDefault();
-            if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
-            playPlaylistItem(0);
-            } else if ((videoPlayer.paused && videoPlayer.readyState > 0) || (audioPlayer.paused && audioPlayer.readyState > 0)) {
-            videoPlayer.play().catch(() => {});
-            audioPlayer.play().catch(() => {});
-            showIndicator(true);
-            } else if (!videoPlayer.paused || !audioPlayer.paused) {
+                if (e.code === 'Space' || key === 'k') {
+                    e.preventDefault();
+                    const btnResume = document.getElementById('btnResumePlay');
+                    if (btnResume && playOverlay.classList.contains('visible')) {
+                        btnResume.click();
+                    } else if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
+                        playPlaylistItem(0);
+                    } else if ((videoPlayer.paused && videoPlayer.readyState > 0) || (audioPlayer.paused && audioPlayer.readyState > 0)) {
+                        videoPlayer.play().catch(() => {});
+                        audioPlayer.play().catch(() => {});
+                        showIndicator(true);
+                    } else if (!videoPlayer.paused || !audioPlayer.paused) {
             videoPlayer.pause();
             audioPlayer.pause();
             showIndicator(false);
@@ -3251,13 +3298,12 @@
             if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0) return;
             controlBar.classList.add('hidden');
             bottomControlBar.classList.add('hidden');
-            if (!isCursorHidden) {
-            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Idle timer expired in JS. Firing HIDE_CURSOR to C#.");
-            document.documentElement.classList.add('cursor-hidden');
-            document.body.classList.add('cursor-hidden');
-            isCursorHidden = true;
-            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(JSON.stringify({ type: 'HIDE_CURSOR' }));
-            }
+                        if (!isCursorHidden) {
+                            document.documentElement.classList.add('cursor-hidden');
+                            document.body.classList.add('cursor-hidden');
+                            isCursorHidden = true;
+                            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(JSON.stringify({ type: 'HIDE_CURSOR' }));
+                        }
             if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
             }, CURSOR_HIDE_DELAY_MS);
             }
@@ -3268,18 +3314,12 @@
             // Do NOT cancel the idle timer if the mouse leaves the document bounds.
             // On touchpads, lifting a finger fires mouseleave, which orphans the cursor if the timer is aborted.
             document.addEventListener('mouseleave', () => {
-            if (isCursorHidden) {
-            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:JS mouseleave fired but ignored (synthetic event due to isCursorHidden).");
-            return; // Ignore synthetic mouseleave caused by DragOverlay intercepting hit-tests
-            }
+                if (isCursorHidden) {
+                    return; // Ignore synthetic mouseleave caused by DragOverlay intercepting hit-tests
+                }
 
-            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Mouse left document");
-            controlBar.classList.add('hidden');
-            bottomControlBar.classList.add('hidden');
-            });
-
-            document.addEventListener('mouseenter', () => {
-            if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage("LOG:Mouse entered document");
+                controlBar.classList.add('hidden');
+                bottomControlBar.classList.add('hidden');
             });
 
             resetIdleTimer();
@@ -3386,14 +3426,9 @@
 
             // Bridge listener for WinUI 3 payload handling when XAML DragOverlay intercepts the native drop
             if (window.chrome && window.chrome.webview) {
-            function sendLog(text) {
-            window.chrome.webview.postMessage("LOG:" + text);
-            }
-
-            window.chrome.webview.addEventListener('message', e => {
-            try {
-            sendLog("Received Bridge Message: " + e.data);
-            let msg = JSON.parse(e.data);
+                window.chrome.webview.addEventListener('message', e => {
+                    try {
+                        let msg = JSON.parse(e.data);
             if (msg.type === 'DRAG_ENTER') {
             document.body.classList.add('drag-over');
             } else if (msg.type === 'DRAG_LEAVE') {
