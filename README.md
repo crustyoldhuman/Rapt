@@ -24,11 +24,11 @@ Even if VLC VSR or MP-C works for you, if you just want to bring some videos to 
 </h3>
 <br>
 
-Designed specifically for dark-room viewing, the green-centric color palette is kind on your eyes. A dynamic ambient canvas glow bleeds your video's colors seamlessly into the pitch-black UI to enhance the experience of videos that don't match your screen's size. Play an audio track, and a gorgeously animated audio spectrum visualizer dances along to the beat.
+Designed specifically for dark-room viewing, the green-centric color palette is friendly on your eyes. A dynamic ambient glow fades from the edge of your video's seamlessly into the pitch-black UI to improve the video experience of older non-widescreen shows or movies. Audio is not forgotten. Play an audio track, and a gorgeously animated audio spectrum visualizer dances along to the beat.
 
-It also completely overhauls how local video text is handled. Instead of rasterized, static text like traditional players, Rapt extracts subtitle tracks and uses modern CSS rendering. This makes your subtitles fully scalable, draggable, with complete on-the-fly timestamp syncing to instantly fix poorly timed subtitles. 
+It also overhauls how local video text is handled. Instead of rasterized, static text like traditional players, Rapt extracts subtitle tracks and uses modern CSS rendering. This makes your subtitles fully scalable, draggable, with complete on-the-fly timestamp syncing to instantly fix poorly timed subtitles. 
 
-Rapt acts as a clean, brutalist viewing experience for your local media. Load up your file, and enjoy. 
+Rapt is a clean, brutalist viewing experience for your local media. Load up your file, and enjoy. 
 <br><br>
 
 ## Other Bells & Whistles
@@ -96,32 +96,19 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 ** ***NOTE*** ** the file "RaptVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of Rapt Player. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/Rapt/Rapt.html to your browser so you can always have easy access anywhere on any computer to a video player that supports Super Sampling.
 
 ## Shortcuts & Controls
-* **Spacebar** / **K:** **Play** / **Pause**
-
+- **Spacebar** / **K:** **Play** / **Pause**
 - **Single Click on player:** **Play** / **Pause**
-
 - **Arrow Left** / **Right:** Skip backward / forward 5 seconds
-
 - **J** / **L:** Seek backward / forward 10 seconds
-
 - **Arrow Up** / **Down:** Increase / Decrease volume
-
 - **M:** Toggle Mute
-
 - **F:** Toggle Fullscreen
-
 - **C:** Toggle Captions / Subtitles
-
 - **R:** Toggle Repeat / Loop Mode
-
 - **N:** Next Track (if playlist is active)
-
 - **P:** Previous Track (if playlist is active)
-
 - **T:** Toggle Fit to Page
-
 - **Scroll Wheel (over inputs):** Adjust volume, zoom, sync offsets, and cropping pixel by pixel
-
 - **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen
 
 ## Known Limitations
