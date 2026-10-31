@@ -35,7 +35,7 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 
 - **Video Scaling:** Because low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
 
-- **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
+- **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
 <p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/f06a8a1b-733c-49b7-a692-5841407364ff" /></p>
 
  
