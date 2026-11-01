@@ -130,5 +130,28 @@ Rapt is a clean, brutalist viewing experience for your local media. Load up your
 - **Engine:** WebView2 Chromium edge utilizing URL separation to isolate media pipelines and preserve DirectComposition Hardware Overlay fast-paths.
 - **Subtitle Demuxing:** FFmpegCore/FFmpeg for in-memory embedded subtitle extraction to `.srt` format. (only used in the Windows implementation)
 
+
+## Shameless Plugs
+
+<h3><p align="center">Gaming Streams</h3></p>
+<p align="center">I stream games no one cares about to a tiny audience on Twitch & YouTube. If you like yammering people, weird games, and custom stream interactions, check me out:
+<p align="center"><img width="125" alt="crustyoldhuman avatar" src="https://github.com/user-attachments/assets/e4de8e77-57ed-4a98-8f70-d2c7246ca553" /></p>
+
+<p align="center">https://www.youtube.com/@crustyoldhuman</p>
+<p align="center">https://www.twitch.tv/crustyoldhuman</p>
+
+<h3><p align="center">ProperDim</h3></p>
+<p align="center">A screen brightness management and automation utility I designed specifically for PCs running on HDTVs so you have better control over your brightness levels without messing with your TV's terrible settings menu. Works on regular monitors as well. Includes hotkeys, state recovery, and custom minimum brightness settings.
+
+<p align="center"><img width="400" alt="ProperDim Banner" src="https://github.com/user-attachments/assets/bae3ad72-5907-4276-b488-631919e46f79" /></p>
+<p align="center">GitHub page: https://github.com/crustyoldhuman/ProperDim</p>
+<p align="center">Microsoft Store (automatic updates): https://apps.microsoft.com/detail/9p4lhj799hxm</p>
+
+<h3><p align="center">SkyPeek</h3>
+<p align="center">Coming soon.
+<p align="center"><img width="400" src="https://github.com/user-attachments/assets/e8208072-1a0b-4c20-afed-74bae111e8a4" /></p>
+<p align="center">GitHub repo: https://github.com/crustyoldhuman/SkyPeek</p>
+<p align="center">Microsoft Store: https://apps.microsoft.com/detail/9P074TF9RTJ2</p>
+
 ---
 *Created with love by [crustyoldhuman](https://github.com/crustyoldhuman)*
