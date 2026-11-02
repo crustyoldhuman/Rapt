@@ -1069,6 +1069,9 @@
             const updateLink = document.getElementById('updateLink');
 
             function checkForUpdates() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('isPackaged') === '1') return;
+
             fetch('https://api.github.com/repos/crustyoldhuman/Rapt/releases/latest')
             .then(response => response.json())
             .then(data => {

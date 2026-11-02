@@ -672,7 +672,17 @@ namespace Rapt
 				};
 
 				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
-				PlayerWebView.Source = new Uri("https://app.rapt/index.html?isNative=1");
+				bool isPackaged = false;
+				try
+				{
+					isPackaged = Windows.ApplicationModel.Package.Current != null;
+				}
+				catch
+				{
+					isPackaged = false;
+				}
+
+				PlayerWebView.Source = new Uri($"https://app.rapt/index.html?isNative=1&isPackaged={(isPackaged ? "1" : "0")}");
 
 				// _isPageReady is deferred until BRIDGE_READY is received from JS
 			}
