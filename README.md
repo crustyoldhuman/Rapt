@@ -24,7 +24,7 @@ Even if VLC VSR or MP-C works for you, if you just want to bring some videos to 
 </h3>
 <br>
 
-Designed specifically for dark-room viewing, the green-centric color palette is friendly on your eyes. The video players dynamic ambient glow fades from the edge of your video's seamlessly into the pitch-black UI to improve the video experience of older non-widescreen shows or movies. Audio playback has a trick of its own too, play an audio track and a gorgeously animated audio spectrum visualizer dances along to the beat. 
+Designed specifically for dark-room viewing, the green-centric color palette is friendly on your eyes. The video players dynamic ambient glow fades from the edge of your video's seamlessly into the pitch-black UI to improve the video experience of older non-widescreen shows or movies. Audio playback has a trick of its own too, play any audio track and a gorgeously animated audio spectrum visualizer dances along to the beat. 
 
 It also overhauls how local video text is handled. Instead of rasterized, static text like traditional players, Rapt extracts subtitle tracks and uses modern CSS rendering. This makes your subtitles fully scalable, draggable, with complete on-the-fly timestamp syncing to instantly fix poorly timed subtitles. 
 
