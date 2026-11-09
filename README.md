@@ -7,7 +7,7 @@
 -->
 Rapt is a native Windows desktop application ***or*** standalone HTML5 video player for PC designed for an immersive dark room playback experience and to apply super resolution upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files with zero configuration, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/c1f57765-0bd1-48e0-83e4-66ad614a47eb" /></p>
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/257934b5-de27-41bc-bf7f-79ed64452649" /></p>
 
 ***Note:*** *Rapt is not intended for mobile devices.*
 
