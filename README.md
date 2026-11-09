@@ -62,7 +62,8 @@ Rapt is a brutalist and clean viewing experience for your local media. Just load
   * Draggable subtitles (click and move subtitle text anywhere on the screen).
   * Adjustable subtitle font size.
 
-- **Supports Video & Audio:** Plays `.mp4`, `.mkv` (if the browser supports the codec), and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. The Windows app version increases filetype support slightly, so if `.mkv` are important to you, download the installer. 
+- **Supports Video, Audio, & Subtitles:** Plays `.mp4`, `.m4v`, `.mov`, `.avi`, `.webm`, and `.mkv` video files (codec dependent), and doubles as an audio player for `.mp3`, `.m4a`, `.aac`, `.wav`, `.ogg`, and `.flac` files. Supported subtitle formats include `.srt` and `.vtt`.<br>
+  **Note:** The Windows app version utilizes the native OS Media Foundation to expand codec compatibility (such as [HEVC](https://apps.microsoft.com/detail/9n4wgh0z6vhq), [AV1](https://apps.microsoft.com/detail/9MVZQVXJBQ9V), [VP9](https://apps.microsoft.com/detail/9N4D0MSMP0PT), and [MPEG-2](https://apps.microsoft.com/detail/9N95Q1ZZPMH4)).
 
 - **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads. The only thing it does on the internet is checks GitHub for updates once when it's loaded. 
 
