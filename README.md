@@ -76,7 +76,7 @@ Rapt is a brutalist and clean viewing experience for your local media. Just load
 
 * For Super Resolution: A PC with a graphics card that supports super resolution (I have not been able to test this on an AMD gpu, if you can, please let me know! It should work--it uses the same piping to get the super sampling to work as nvidia)
 * A video file to play
-* A screen to play it on
+* A screen to play it on, ideally with some speakers attached
 * A browser that supports HTML5
 * A brain, but does not need to be particularly good
 
