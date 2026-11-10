@@ -1698,7 +1698,7 @@
             if (urlParams.get('isNative') === '1') {
                 const introText = document.getElementById('introText');
                 if (introText) {
-                    introText.innerText = 'Double-click anywhere, or drag and drop a media file.';
+                    introText.innerText = 'Double-click anywhere, or drag and drop a media file';
                 }
             }
 
@@ -2752,15 +2752,11 @@
                 const dhBottom = destY4 - destY3;
 
                 const now = performance.now();
-                let dt = now - lastAmbientTime;
                 lastAmbientTime = now;
 
-                if (dt > 1000) dt = 16.66;
-                const tau = 2500; // Increase this value (e.g., 2000-4000) for an even slower color transition
-                let alpha = 1 - Math.exp(-dt / tau);
-                if (alpha < 0.01) alpha = 0.01; // Lowered minimum clamp to allow the slower blending to take effect
-
-                ambientCtx.globalAlpha = isFirstFrame ? 1.0 : alpha;
+                // 0.08 is the strict mathematical floor for HTML5 8-bit canvases. 
+                // Any lower, and sub-decimal color shifts round down to 0, causing permanent ghosting.
+                ambientCtx.globalAlpha = isFirstFrame ? 1.0 : 0.08;
 
                 const edgeW = Math.max(1, Math.round(srcW * 0.01));
                 const edgeH = Math.max(1, Math.round(srcH * 0.01));
