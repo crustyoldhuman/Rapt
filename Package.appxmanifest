@@ -7,7 +7,7 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-	<Identity    Name="crustyoldhuman.RaptVideoPlayer"    Publisher="CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493"    Version="1.3.1.0" />
+	<Identity    Name="crustyoldhuman.RaptVideoPlayer"    Publisher="CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493"    Version="1.3.3.0" />
 	<mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 	<Properties>
 		<DisplayName>Rapt Video Player</DisplayName>
@@ -40,6 +40,7 @@
 		<Extensions>
 			<uap:Extension Category="windows.fileTypeAssociation">
 				<uap:FileTypeAssociation Name="video">
+					<uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
 					<uap:SupportedFileTypes>
 						<uap:FileType>.mp4</uap:FileType>
 						<uap:FileType>.mkv</uap:FileType>
@@ -52,6 +53,7 @@
 			</uap:Extension>
 			<uap:Extension Category="windows.fileTypeAssociation">
 				<uap:FileTypeAssociation Name="audio">
+					<uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
 					<uap:SupportedFileTypes>
 						<uap:FileType>.mp3</uap:FileType>
 						<uap:FileType>.wav</uap:FileType>
@@ -64,10 +66,10 @@
 			</uap:Extension>
 			<uap:Extension Category="windows.fileTypeAssociation">
 				<uap:FileTypeAssociation Name="subtitles">
+					<uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
 					<uap:SupportedFileTypes>
 						<uap:FileType>.srt</uap:FileType>
 						<uap:FileType>.vtt</uap:FileType>
-						<uap:FileType>.ass</uap:FileType>
 					</uap:SupportedFileTypes>
 				</uap:FileTypeAssociation>
 			</uap:Extension>

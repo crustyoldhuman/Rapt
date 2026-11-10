@@ -84,7 +84,11 @@ namespace Rapt
 
 		[LibraryImport("user32.dll")]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		private static partial bool SetForegroundWindow(IntPtr _hWnd);
+		private static partial bool SetForegroundWindow(IntPtr hWnd);
+
+		[LibraryImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		private static partial bool AllowSetForegroundWindow(uint dwProcessId);
 
 		private static IntPtr redirectEventHandle = IntPtr.Zero;
 
@@ -103,6 +107,7 @@ namespace Rapt
 
 			try
 			{
+				AllowSetForegroundWindow(keyInstance.ProcessId);
 				Process process = Process.GetProcessById((int)keyInstance.ProcessId);
 				if (process.MainWindowHandle != IntPtr.Zero)
 				{

@@ -1,9 +1,14 @@
 ﻿using Microsoft.UI.Xaml;
 using System;
+using System.Runtime.InteropServices;
 namespace Rapt
 {
 	public partial class App : Application
 	{
+		[LibraryImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		private static partial bool SetForegroundWindow(IntPtr hWnd);
+
 		private Window? m_window;
 
 		public App()
@@ -55,8 +60,12 @@ namespace Rapt
 
 								if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
 								{
-									presenter.Restore();
+									if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized)
+									{
+										presenter.Restore();
+									}
 								}
+								SetForegroundWindow(hwnd);
 								m_window.Activate();
 
 								if (pipeArgs.Length > 1)
@@ -100,8 +109,12 @@ namespace Rapt
 
 					if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
 					{
-						presenter.Restore();
+						if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Minimized)
+						{
+							presenter.Restore();
+						}
 					}
+					SetForegroundWindow(hwnd);
 					m_window.Activate();
 				}
 			});
