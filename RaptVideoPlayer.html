@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapt Player 1.3.3</title>
+    <title>Rapt Player 1.4.0</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='4' fill='%23142229' stroke='black' stroke-width='1'/%3E%3Cpolygon points='9,7 18,12 9,17' fill='%2323A620'/%3E%3C/svg%3E"
         type="image/svg+xml">
@@ -53,6 +53,7 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
             transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
@@ -80,9 +81,10 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
             transition: opacity 0.4s ease, visibility 0.4s ease;
-            width: 80%;
-            max-width: 900px;
+            width: 60%;
+            max-width: 850px;
         }
 
         .bottom-controls.hidden {
@@ -252,6 +254,30 @@
             pointer-events: none;
         }
 
+        #volumeSlider {
+            background:
+                linear-gradient(
+                    to right,
+                    transparent calc(6px + var(--val, 0) * (100% - 12px)),
+                    #142229 calc(6px + var(--val, 0) * (100% - 12px))
+                ),
+                linear-gradient(
+                    to right,
+                    #23A620 0%,
+                    #23A620 calc(6px + 0.28 * (100% - 12px)),
+                    #eab308 calc(6px + 0.52 * (100% - 12px)),
+                    #eab308 calc(6px + 0.76 * (100% - 12px)),
+                    #ff5555 calc(6px + 0.84 * (100% - 12px)),
+                    #ff5555 100%
+                );
+        }
+
+        .disabled-control {
+            opacity: 0.4;
+            color: #888888;
+            pointer-events: none;
+        }
+
         input[type="number"] {
             color-scheme: dark;
         }
@@ -307,7 +333,7 @@
             border: 1px solid #000000;
             border-radius: 3px;
             position: relative;
-            margin: 0 4px;
+            margin: 0;
         }
 
         input[type="checkbox"]:checked::after {
@@ -318,6 +344,23 @@
             font-weight: bold;
             top: -3px;
             left: 2px;
+        }
+
+        input[type="checkbox"]:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #444444;
+        }
+
+        input[type="checkbox"]:disabled:checked::after {
+            color: #888888;
+        }
+
+        input[type="checkbox"]:disabled + label {
+            opacity: 0.4;
+            color: #888888;
+            cursor: not-allowed !important;
+            pointer-events: none;
         }
 
         button,
@@ -350,6 +393,45 @@
         video {
             position: relative;
             z-index: 2;
+        }
+
+        video.crt-active {
+            filter: contrast(1.04) brightness(1.04) blur(0.35px);
+        }
+
+        #crtOverlay {
+            position: fixed;
+            z-index: 3;
+            pointer-events: none;
+            overflow: hidden;
+            mix-blend-mode: multiply;
+            background:
+                repeating-linear-gradient(
+                    to bottom,
+                    rgba(0, 0, 0, 0) 0px,
+                    rgba(0, 0, 0, 0) 1.5px,
+                    rgba(0, 0, 0, 0.16) 2.75px,
+                    rgba(0, 0, 0, 0) 4px
+                ),
+                repeating-linear-gradient(
+                    to right,
+                    rgba(255, 0, 0, 0.03) 0px,
+                    rgba(0, 255, 0, 0.03) 1px,
+                    rgba(0, 0, 255, 0.03) 2px
+                );
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.45);
+        }
+
+        #crtOverlay::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.38) 100%);
+            pointer-events: none;
+        }
+
+        #crtOverlay.hidden {
+            display: none;
         }
 
         #ambientCanvas {
@@ -1037,7 +1119,7 @@
             </div>
 
             <div class="ui-group" id="subtitleContainer">
-                <button id="btnSubtitles">Load Subs</button>
+                <button id="btnSubtitles" disabled>Load Subs</button>
                 <div class="custom-select-wrapper" id="customSubSelectWrapper" style="display: none;">
                     <div class="custom-select" id="customSubSelectValue">Subs Off</div>
                     <div class="custom-options" id="customSubSelectOptions"></div>
@@ -1073,129 +1155,43 @@
                 <input type="file" id="srtFileInput" accept=".srt,.vtt" style="display: none;">
             </div>
 
-            <div class="slider-container" style="display: flex; align-items: center; gap: 15px;">
-                <div
-                    style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label for="sizeSlider" style="font-size: small;">Vid Size: <span
-                                id="scaleValue">1.00</span>x</label>
-                        <input type="range" id="sizeSlider" min="0.5" max="5" step="0.05" value="1"
-                            style="width: 80px;">
-                    </div>
-                    <div id="subSizeGroup" style="display: none; align-items: center; gap: 10px;">
-                        <label for="subSizeSlider" style="font-size: small;">Sub Size: <span
-                                id="subScaleValue">1.00</span>x</label>
-                        <input type="range" id="subSizeSlider" min="0.5" max="3" step="0.1" value="1.00"
-                            style="width: 80px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="slider-container" style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 8px;">
+                        <div id="vidSizeGroup" class="disabled-control" style="display: flex; align-items: center; gap: 10px;">
+                            <label for="sizeSlider" style="font-size: small;">Vid Size: <span
+                                    id="scaleValue">1.00</span>x</label>
+                            <input type="range" id="sizeSlider" min="0.5" max="5" step="0.05" value="1"
+                                style="width: 80px;" disabled>
+                        </div>
+                        <div id="subSizeGroup" style="display: none; align-items: center; gap: 10px;">
+                            <label for="subSizeSlider" style="font-size: small;">Sub Size: <span
+                                    id="subScaleValue">1.00</span>x</label>
+                            <input type="range" id="subSizeSlider" min="0.5" max="3" step="0.1" value="1.00"
+                                style="width: 80px;">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div
-                style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 32px; width: 70px; gap: 0px;">
-                <div class="ui-group">
-                    <input type="checkbox" id="ambientToggle"> <label for="ambientToggle"
-                        style="cursor: pointer; user-select: none; margin-left: -4px;">Glow</label>
+                <div class="ui-group" style="gap: 5px;">
+                    <input type="checkbox" id="crtToggle"> <label for="crtToggle"
+                        style="cursor: pointer; user-select: none;">CRT</label>
                 </div>
-                <div id="glowIntensityGroup" style="display: none; margin-top: 2px;">
-                    <input type="range" id="glowSlider" min="1" max="100" value="80" style="width: 65px;"
-                        title="Glow Intensity">
-                </div>
-            </div>
 
-            <button id="btnCropToggle">Crop edges</button>
-        </div>
-        <div class="crop-row" id="cropControls"
-            style="display: none; gap: 20px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
-            <div class="ui-group">
-                <label>Top/Bottom (px):</label>
                 <div
-                    style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
-                    <input type="number" id="cropTop" min="0" step="1" value="0" class="no-spinners"
-                        style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
-                    <div
-                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
-                        <div id="cropTopUp"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 4l-8 10h16z" />
-                            </svg></div>
-                        <div id="cropTopDown"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 20l-8-10h16z" />
-                            </svg></div>
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 32px; gap: 0px;">
+                    <div class="ui-group" style="gap: 5px;">
+                        <input type="checkbox" id="ambientToggle"> <label for="ambientToggle"
+                            style="cursor: pointer; user-select: none;">Glow</label>
+                    </div>
+                    <div id="glowIntensityGroup" style="display: none; margin-top: 2px;">
+                        <input type="range" id="glowSlider" min="1" max="100" value="80" style="width: 65px;"
+                            title="Glow Intensity">
                     </div>
                 </div>
-                <button id="linkTB" class="btn-sync active" title="Unlink/Link"><svg width="14" height="14"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg></button>
-                <div
-                    style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
-                    <input type="number" id="cropBottom" min="0" step="1" value="0" class="no-spinners"
-                        style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
-                    <div
-                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
-                        <div id="cropBottomUp"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 4l-8 10h16z" />
-                            </svg></div>
-                        <div id="cropBottomDown"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 20l-8-10h16z" />
-                            </svg></div>
-                    </div>
-                </div>
-            </div>
-            <div class="ui-group">
-                <label>Left/Right (px):</label>
-                <div
-                    style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
-                    <input type="number" id="cropLeft" min="0" step="1" value="0" class="no-spinners"
-                        style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
-                    <div
-                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
-                        <div id="cropLeftUp"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 4l-8 10h16z" />
-                            </svg></div>
-                        <div id="cropLeftDown"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 20l-8-10h16z" />
-                            </svg></div>
-                    </div>
-                </div>
-                <button id="linkLR" class="btn-sync active" title="Unlink/Link"><svg width="14" height="14"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg></button>
-                <div
-                    style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
-                    <input type="number" id="cropRight" min="0" step="1" value="0" class="no-spinners"
-                        style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
-                    <div
-                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
-                        <div id="cropRightUp"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 4l-8 10h16z" />
-                            </svg></div>
-                        <div id="cropRightDown"
-                            style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
-                            <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
-                                <path d="M12 20l-8-10h16z" />
-                            </svg></div>
-                    </div>
-                </div>
+
+                <button id="btnCropToggle" disabled>Crop edges</button>
             </div>
         </div>
         <div id="filenameDisplay" style="font-size: 13px; color: #23A620; text-align: center; margin-top: -5px; word-break: break-all; max-width: 90%;"></div>
@@ -1252,23 +1248,23 @@
         </button>
         <input type="range" id="seekSlider" min="0" max="100" value="0" step="0.1" disabled>
         <span id="timeDisplay">0:00 / 0:00</span>
-        <div class="slider-container" style="margin-left: 10px; align-items: flex-end;">
-            <span id="muteIcon"
-                style="cursor: pointer; user-select: none; transition: opacity 0.2s; margin-bottom: 2px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;"
-                title="Mute/Unmute">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path id="volWaves" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    <line id="volMuteLine" x1="1" y1="3" x2="12" y2="21"
-                        style="display: none; stroke: #ff5555; stroke-width: 2;"></line>
-                </svg>
-            </span>
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <label style="font-size: 13px; display: inline-block; width: 45px; text-align: center;"><span
+        <div class="slider-container" style="margin-left: 10px; align-items: center;">
+            <div style="position: relative; display: inline-flex; align-items: center; justify-content: center;">
+                <label style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 1px; font-size: 11px; line-height: 1; white-space: nowrap; pointer-events: none;"><span
                         id="volumeValue">100</span>%</label>
-                <input type="range" id="volumeSlider" min="0" max="2.5" step="0.01" value="1" style="width: 70px;">
+                <span id="muteIcon"
+                    style="cursor: pointer; user-select: none; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;"
+                    title="Mute/Unmute">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path id="volWaves" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        <line id="volMuteLine" x1="1" y1="3" x2="12" y2="21"
+                            style="display: none; stroke: #ff5555; stroke-width: 2;"></line>
+                    </svg>
+                </span>
             </div>
+            <input type="range" id="volumeSlider" min="0" max="2.5" step="0.01" value="1" style="width: 70px;">
         </div>
         <button id="btnFit"
             style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;"
@@ -1298,6 +1294,7 @@
     <video width="640" id="videoPlayer" crossorigin="anonymous" muted>
         Your browser does not support the video tag.
     </video>
+    <div id="crtOverlay" class="hidden"></div>
     <audio id="audioPlayer" crossorigin="anonymous" style="display: none;"></audio>
 
     <div id="playbackIndicator" class="playback-indicator">
@@ -1316,6 +1313,105 @@
         style="position: fixed; bottom: 5px; right: 28px; color: #166E14; text-decoration: none; font-size: 14px; font-weight: bold; z-index: 1000; opacity: .5; transition: opacity 0.5s ease; pointer-events: auto;">Rapt
         Info</a>
 
+    <div id="cropPopupOverlay" class="info-popup-overlay" style="background: transparent; pointer-events: none; align-items: flex-start; padding-top: 38vh;">
+        <div class="info-popup" style="max-width: fit-content; padding: 25px 50px 25px 25px; pointer-events: auto;">
+            <div id="closeCropPopupBtn" class="close-popup-btn" title="Close">&#10006;</div>
+            <div class="crop-row" id="cropControls"
+                style="display: flex; gap: 20px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
+                <div class="ui-group">
+                    <label>Top/Bottom (px):</label>
+                    <div
+                        style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
+                        <input type="number" id="cropTop" min="0" step="1" value="0" class="no-spinners"
+                            style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
+                        <div
+                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
+                            <div id="cropTopUp"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 4l-8 10h16z" />
+                                </svg></div>
+                            <div id="cropTopDown"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 20l-8-10h16z" />
+                                </svg></div>
+                        </div>
+                    </div>
+                    <button id="linkTB" class="btn-sync active" title="Unlink/Link"><svg width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg></button>
+                    <div
+                        style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
+                        <input type="number" id="cropBottom" min="0" step="1" value="0" class="no-spinners"
+                            style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
+                        <div
+                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
+                            <div id="cropBottomUp"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 4l-8 10h16z" />
+                                </svg></div>
+                            <div id="cropBottomDown"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 20l-8-10h16z" />
+                                </svg></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui-group">
+                    <label>Left/Right (px):</label>
+                    <div
+                        style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
+                        <input type="number" id="cropLeft" min="0" step="1" value="0" class="no-spinners"
+                            style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
+                        <div
+                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
+                            <div id="cropLeftUp"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 4l-8 10h16z" />
+                                </svg></div>
+                            <div id="cropLeftDown"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 20l-8-10h16z" />
+                                </svg></div>
+                        </div>
+                    </div>
+                    <button id="linkLR" class="btn-sync active" title="Unlink/Link"><svg width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg></button>
+                    <div
+                        style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
+                        <input type="number" id="cropRight" min="0" step="1" value="0" class="no-spinners"
+                            style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: center; padding: 0 2px 0 6px; font-size: 13px; box-sizing: border-box;">
+                        <div
+                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
+                            <div id="cropRightUp"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 4l-8 10h16z" />
+                                </svg></div>
+                            <div id="cropRightDown"
+                                style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; cursor: pointer;">
+                                <svg width="12" height="8" viewBox="0 0 24 24" fill="#23A620">
+                                    <path d="M12 20l-8-10h16z" />
+                                </svg></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="infoPopupOverlay" class="info-popup-overlay">
         <div class="info-popup">
             <div id="closePopupBtn" class="close-popup-btn" title="Close">&#10006;</div>
@@ -1326,7 +1422,7 @@
             </div>
 
             <div id="contentInfo" class="tab-content active">
-                <h2>Rapt 1.3.3</h2>
+                <h2>Rapt 1.4.0</h2>
                 <p class="github-link">
                     <a href="https://github.com/crustyoldhuman/Rapt"
                         target="_blank">Open source Github repo</a>
@@ -1398,12 +1494,13 @@
     </div>
 
     <script>
-        const APP_VERSION = "1.3.3.0"; // Update this with each release
+        const APP_VERSION = "1.4.0.0"; // Update this with each release
 
         const CURSOR_HIDE_DELAY_MS = 1500; // Change this value to adjust mouse disappear time (in milliseconds)
         const videoFileInput = document.getElementById('videoFileInput');
         const videoPlayer = document.getElementById('videoPlayer');
         const audioPlayer = document.getElementById('audioPlayer');
+        const vidSizeGroup = document.getElementById('vidSizeGroup');
         const sizeSlider = document.getElementById('sizeSlider');
         const scaleValue = document.getElementById('scaleValue');
         const volumeSlider = document.getElementById('volumeSlider');
@@ -1411,6 +1508,8 @@
         const muteIcon = document.getElementById('muteIcon');
         const btnFit = document.getElementById('btnFit');
         const btnCropToggle = document.getElementById('btnCropToggle');
+        const cropPopupOverlay = document.getElementById('cropPopupOverlay');
+        const closeCropPopupBtn = document.getElementById('closeCropPopupBtn');
         const cropControls = document.getElementById('cropControls');
         const cropTop = document.getElementById('cropTop');
         const cropBottom = document.getElementById('cropBottom');
@@ -1522,6 +1621,10 @@
         let srtSource = null; // 'vid_0', 'vid_1', 'file', or null
         let pairedSrtLoaded = false;
 
+        const crtToggle = document.getElementById('crtToggle');
+        const crtOverlay = document.getElementById('crtOverlay');
+        let isCrtEnabled = false;
+
         const ambientToggle = document.getElementById('ambientToggle');
         const glowIntensityGroup = document.getElementById('glowIntensityGroup');
         const glowSlider = document.getElementById('glowSlider');
@@ -1610,10 +1713,16 @@
         }
 
         btnCropToggle.addEventListener('click', () => {
-            if (cropControls.style.display === 'none') {
-                cropControls.style.display = 'flex';
-            } else {
-                cropControls.style.display = 'none';
+            cropPopupOverlay.classList.add('visible');
+        });
+
+        closeCropPopupBtn.addEventListener('click', () => {
+            cropPopupOverlay.classList.remove('visible');
+        });
+
+        cropPopupOverlay.addEventListener('click', (e) => {
+            if (e.target === cropPopupOverlay) {
+                cropPopupOverlay.classList.remove('visible');
             }
         });
 
@@ -1702,6 +1811,7 @@
                 }
             }
 
+            const savedCrt = localStorage.getItem('rapt_crtEnabled');
             const savedAmbient = localStorage.getItem('rapt_ambientEnabled');
             const savedGlow = localStorage.getItem('rapt_glowIntensity');
             const savedFit = localStorage.getItem('rapt_fitToPage');
@@ -1721,6 +1831,9 @@
                 customSubContainer.style.transform = `translateX(-50%) translate(${subOffsetX}px, ${subOffsetY}px)`;
             }
 
+            crtToggle.checked = savedCrt === 'true';
+            isCrtEnabled = crtToggle.checked;
+
             ambientToggle.checked = savedAmbient === 'true';
             isAmbientEnabled = ambientToggle.checked;
             glowIntensityGroup.style.display = isAmbientEnabled ? 'block' : 'none';
@@ -1734,6 +1847,7 @@
             }
 
             manageAmbientState();
+            manageCrtState();
 
             seekSlider.disabled = true;
             seekSlider.value = 0;
@@ -1834,6 +1948,17 @@
         }
 
         function updateSubtitleUI() {
+            if (!currentVideoFile || isAudioFile) {
+                btnSubtitles.style.display = 'block';
+                btnSubtitles.disabled = true;
+                customSubSelectWrapper.style.display = 'none';
+                customSubSelectOptions.classList.remove('open');
+                offsetGroup.style.display = 'none';
+                if (subSizeGroup) subSizeGroup.style.display = 'none';
+                customSubContainer.innerHTML = '';
+                return;
+            }
+            btnSubtitles.disabled = false;
             const isNative = !!(window.chrome && window.chrome.webview);
             btnSubtitles.style.display = 'none';
             customSubSelectWrapper.style.display = 'block';
@@ -2014,6 +2139,11 @@
 
             if (videoFile) {
                 isAudioFile = videoFile.type.startsWith('audio/') || !!videoFile.name.match(/\.(mp3|wav|ogg|flac|m4a|aac)$/i);
+                    crtToggle.disabled = isAudioFile;
+                    sizeSlider.disabled = isAudioFile;
+                    vidSizeGroup.classList.toggle('disabled-control', isAudioFile);
+                    btnCropToggle.disabled = isAudioFile;
+                    manageCrtState();
                     visualizerCanvas.classList.add('hidden');
                     // DISABLED WEB AUDIO:
                     // createMediaElementSource breaks hardware overlays in Chromium, killing VSR.
@@ -2039,7 +2169,7 @@
                         }
                     }
 
-                    cropControls.style.display = 'none';
+                    cropPopupOverlay.classList.remove('visible');
                     cropTop.value = 0; cropBottom.value = 0; cropLeft.value = 0; cropRight.value = 0;
                     applyVideoCrop();
 
@@ -2539,6 +2669,13 @@
                 playOverlay.classList.add('visible');
                 ambientCanvas.classList.add('hidden');
                 visualizerCanvas.classList.add('hidden');
+                crtOverlay.classList.add('hidden');
+                videoPlayer.classList.remove('crt-active');
+                currentVideoFile = null;
+                sizeSlider.disabled = true;
+                vidSizeGroup.classList.add('disabled-control');
+                btnCropToggle.disabled = true;
+                updateSubtitleUI();
 
                 let errorMsg = 'Your browser cannot play this file. Try an MP4 or WebM, or download <a href="ms-windows-store://pdp/?ProductId=9p074tf9rtj2" style="color: #3b82f6; text-decoration: underline;" target="_blank">Rapt on Windows</a> for improved playback.';
                 if (window.chrome && window.chrome.webview) {
@@ -2795,6 +2932,19 @@
                 drawAmbientFrame();
             }
 
+            function manageCrtState() {
+                const active = isCrtEnabled && !isAudioFile && videoPlayer._hasStartedPlaying && videoPlayer.readyState > 0;
+                videoPlayer.classList.toggle('crt-active', active);
+                crtOverlay.classList.toggle('hidden', !active);
+                if (active) updateVideoSize(sizeSlider.value);
+            }
+
+            crtToggle.addEventListener('change', (e) => {
+                isCrtEnabled = e.target.checked;
+                localStorage.setItem('rapt_crtEnabled', isCrtEnabled);
+                manageCrtState();
+            });
+
             ambientToggle.addEventListener('change', (e) => {
                 isAmbientEnabled = e.target.checked;
                 localStorage.setItem('rapt_ambientEnabled', isAmbientEnabled);
@@ -2815,7 +2965,10 @@
                 this.dispatchEvent(new Event('input'));
             });
 
-            document.addEventListener('fullscreenchange', manageAmbientState);
+            document.addEventListener('fullscreenchange', () => {
+                manageAmbientState();
+                manageCrtState();
+            });
 
             // --- PLAYLIST UI CONTROLS ---
             let isPlaylistLockedOpen = false;
@@ -3240,6 +3393,7 @@
                 }
 
                 manageAmbientState();
+                manageCrtState();
             });
 
             videoPlayer.addEventListener('pause', function () {
@@ -3315,7 +3469,7 @@
                 const isOverControlBar = path.includes(controlBar);
                 const isOverBottomBar = path.includes(bottomControlBar);
                 const isOverPlaylist = path.includes(playlistPanel) || path.includes(playlistHandle);
-                const isOverInfo = path.includes(infoPopupOverlay) || path.includes(infoLink);
+                const isOverInfo = path.includes(infoPopupOverlay) || path.includes(infoLink) || (typeof cropPopupOverlay !== 'undefined' && path.includes(cropPopupOverlay));
                 const isOverOverlay = path.includes(playOverlay);
                 const isOverSub = path.includes(customSubContainer);
 
@@ -3522,11 +3676,9 @@
                 timeDisplay.innerText = `${formatTime(seekTime)} / ${formatTime(videoPlayer.duration)}`;
             });
 
-            bottomControlBar.addEventListener('wheel', (e) => {
-                // Ignore if hovering over the volume controls to prevent conflicts
-                if (e.target.closest('#volumeSlider') || e.target.closest('.slider-container')) return;
-
+            seekSlider.addEventListener('wheel', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 if (!videoPlayer.duration || seekSlider.disabled) return;
 
                 const seekAmount = e.deltaY < 0 ? 5 : -5;
@@ -3537,8 +3689,9 @@
                 audioPlayer.currentTime = newTime;
 
                 seekSlider.value = (newTime / videoPlayer.duration) * 100;
+                syncRangeFills();
                 timeDisplay.innerText = `${formatTime(newTime)} / ${formatTime(videoPlayer.duration)}`;
-            });
+            }, { passive: false });
 
             btnFullscreen.addEventListener('click', () => {
                 if (!document.fullscreenElement) {
@@ -3616,6 +3769,16 @@
                     }
                     ambientCanvas.style.webkitMaskComposite = '';
                     ambientCanvas.style.maskComposite = '';
+
+                    const rect = videoPlayer.getBoundingClientRect();
+                    const crtLeft = rect.left + (rect.width * cL);
+                    const crtTop = rect.top + (rect.height * cT);
+                    const crtW = Math.max(0, rect.width * (1 - cL - cR));
+                    const crtH = Math.max(0, rect.height * (1 - cT - cB));
+                    crtOverlay.style.left = (Math.floor(crtLeft) - 1) + 'px';
+                    crtOverlay.style.top = (Math.floor(crtTop) - 1) + 'px';
+                    crtOverlay.style.width = (Math.ceil(crtW) + 2) + 'px';
+                    crtOverlay.style.height = (Math.ceil(crtH) + 2) + 'px';
                 }
             }
 
@@ -3644,6 +3807,8 @@
                 if (isFitToPageEnabled && nativeWidth && nativeHeight) {
                     sizeSlider.value = currentFitScale;
                     updateVideoSize(currentFitScale);
+                } else if (isCrtEnabled && !isAudioFile && videoPlayer.readyState > 0) {
+                    updateVideoSize(sizeSlider.value);
                 }
             });
 
@@ -3688,6 +3853,7 @@
             volumeSlider.addEventListener('input', function (e) {
                 const val = parseFloat(e.target.value);
                 volumeValue.innerText = Math.round(val * 100);
+                syncRangeFills();
 
                 if (gainNode) {
                     gainNode.gain.value = val;
@@ -3710,14 +3876,15 @@
 
             volumeSlider.addEventListener('wheel', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 e.deltaY < 0 ? this.stepUp(5) : this.stepDown(5);
                 this.dispatchEvent(new Event('input'));
-            });
+            }, { passive: false });
 
             // Allow scrolling anywhere in the viewport to adjust the volume
             window.addEventListener('wheel', function (e) {
-                // Ignore if the mouse is hovering over the top or bottom UI panels, or the playlist
-                if (controlBar.contains(e.target) || bottomControlBar.contains(e.target) || playlistPanel.contains(e.target)) return;
+                // Ignore if the mouse is hovering over the top UI panel, playlist, or crop popup
+                if (controlBar.contains(e.target) || playlistPanel.contains(e.target) || (typeof cropPopupOverlay !== 'undefined' && cropPopupOverlay.contains(e.target))) return;
 
                 e.preventDefault();
                 e.deltaY < 0 ? volumeSlider.stepUp(5) : volumeSlider.stepDown(5);
@@ -3732,14 +3899,16 @@
                 }
 
                 clearTimeout(hideTimeout);
-                hideTimeout = setTimeout(() => {
-                    bottomControlBar.classList.add('hidden');
-                    if (!isCursorHidden) {
-                        document.documentElement.classList.add('cursor-hidden');
-                        document.body.classList.add('cursor-hidden');
-                        isCursorHidden = true;
-                    }
-                }, CURSOR_HIDE_DELAY_MS);
+                if (!bottomControlBar.contains(e.target)) {
+                    hideTimeout = setTimeout(() => {
+                        bottomControlBar.classList.add('hidden');
+                        if (!isCursorHidden) {
+                            document.documentElement.classList.add('cursor-hidden');
+                            document.body.classList.add('cursor-hidden');
+                            isCursorHidden = true;
+                        }
+                    }, CURSOR_HIDE_DELAY_MS);
+                }
             }, { passive: false });
 
             btnFit.addEventListener('click', function () {
@@ -3882,7 +4051,6 @@
                         isCursorHidden = true;
                         if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(JSON.stringify({ type: 'HIDE_CURSOR' }));
                     }
-                    if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
                 }, CURSOR_HIDE_DELAY_MS);
             }
         }
@@ -3916,7 +4084,6 @@
             if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay && !isOverPlaylist) {
                 controlBar.classList.add('hidden');
                 bottomControlBar.classList.add('hidden');
-                if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
             }
         });
 
