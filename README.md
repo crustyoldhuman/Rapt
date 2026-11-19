@@ -38,7 +38,7 @@ Rapt is a brutalist and clean viewing experience for your local media. Just load
 - **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
 <p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/f06a8a1b-733c-49b7-a692-5841407364ff" /></p>
 
-- **CRT Filter:** Crank up the nostalgia on your old video collection by enabled the CRT filter--looks great on old cartoons
+- **CRT Filter:** Crank up the nostalgia by enabling the CRT filter on old videos--looks great on old cartoons
  
 - **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and upscalers waste resources trying to process encoded black letterbox bars. Rapt lets you crop the edges in real-time to fix both of these problems.
   
