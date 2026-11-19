@@ -1154,16 +1154,12 @@
                 <div id="offsetGroup" style="display: none; align-items: center; gap: 5px;">
                     <label id="subSyncLabel" for="subOffset"
                         style="font-size: 13px; user-select: none;">Sub-Sync:</label>
-                    <span id="offsetSign"
-                        style="font-size: 16px; font-weight: bold; width: 12px; text-align: center; color: #23A620; cursor: pointer; user-select: none;"
-                        title="Click to flip sign"></span>
                     <div
                         style="display: inline-flex; align-items: center; background-color: #142229; border: 1px solid #000000; border-radius: 4px; height: 22px; overflow: hidden;">
-                        <input type="number" id="subOffset" step="0.1" value="0" title="Offset in secs"
-                            class="no-spinners"
-                            style="width: 36px; background-color: transparent; color: #23A620; border: none; outline: none; text-align: right; padding: 0 1px 0 2px; font-size: 13px; box-sizing: border-box;">
+                        <input type="text" id="subOffset" inputmode="decimal" data-step="0.1" value="0" title="Offset in secs"
+                            style="width: 38px; height: 100%; background-color: transparent; color: #23A620; border: none; outline: none; text-align: right; padding: 0 1px 0 4px; font-size: 13px; font-family: inherit; line-height: 1; box-sizing: border-box;">
                         <span id="subOffsetSuffix"
-                            style="font-size: 13px; color: #23A620; padding-right: 4px; transform: translateY(1px); pointer-events: none; user-select: none;">s</span>
+                            style="font-size: 13px; font-family: inherit; line-height: 1; color: #23A620; padding-right: 4px; pointer-events: none; user-select: none;">s</span>
                         <div
                             style="display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #142229; border-left: 1px solid #000000; width: 16px; height: 100%;">
                             <div id="subOffsetUp"
@@ -1968,10 +1964,8 @@
                 if (subSizeGroup) subSizeGroup.style.display = 'flex';
 
                 if (isNewSelection) {
-                    subOffset.value = 0;
+                    subOffset.value = '0';
                     currentSyncOffset = 0;
-                    const os = document.getElementById('offsetSign');
-                    if (os) { os.innerText = ''; os.style.color = '#23A620'; }
                     subOffset.style.color = '#23A620';
                     const suffix = document.getElementById('subOffsetSuffix');
                     if (suffix) { suffix.style.color = '#23A620'; }
@@ -2363,41 +2357,27 @@
                 e.target.value = ''; // Reset so the exact same file can be clicked again
             });
 
-            const signSpan = document.getElementById('offsetSign');
+            function applySyncOffset(newOffset, formatInput = true) {
+                newOffset = Math.round(newOffset * 10) / 10;
+                if (Object.is(newOffset, -0)) newOffset = 0;
 
-            // Bonus: Allow clicking the + / - symbol to manually flip the time offset!
-            signSpan.addEventListener('click', () => {
-                if (currentSyncOffset !== 0) {
-                    applySyncOffset(currentSyncOffset * -1);
-                }
-            });
+                // 1. Update UI colors & formatted signed value
+                const suffix = document.getElementById('subOffsetSuffix');
+                const color = newOffset === 0 ? '#23A620' : (newOffset > 0 ? '#3b82f6' : '#ff5555');
+                subOffset.style.color = color;
+                if (suffix) suffix.style.color = color;
 
-            function applySyncOffset(newOffset) {
-                const delta = newOffset - currentSyncOffset;
-                if (delta === 0) return;
-
-                // 1. Update UI colors & symbols (forces the box to only show absolute value)
-                if (newOffset === 0) {
-                    signSpan.innerText = '';
-                    signSpan.style.color = '#23A620'; // Light Green
-                    subOffset.style.color = '#23A620';
-                    document.getElementById('subOffsetSuffix').style.color = '#23A620';
-                    subOffset.value = 0;
-                } else if (newOffset > 0) {
-                    signSpan.innerText = '+';
-                    signSpan.style.color = '#3b82f6'; // Blue
-                    subOffset.style.color = '#3b82f6';
-                    document.getElementById('subOffsetSuffix').style.color = '#3b82f6';
-                    subOffset.value = Number(newOffset.toFixed(2));
-                } else {
-                    signSpan.innerText = '-';
-                    signSpan.style.color = '#ff5555'; // Red
-                    subOffset.style.color = '#ff5555';
-                    document.getElementById('subOffsetSuffix').style.color = '#ff5555';
-                    subOffset.value = Number(Math.abs(newOffset).toFixed(2));
+                if (formatInput) {
+                    if (newOffset === 0) {
+                        subOffset.value = '0';
+                    } else if (newOffset > 0) {
+                        subOffset.value = '+' + newOffset.toFixed(1);
+                    } else {
+                        subOffset.value = newOffset.toFixed(1);
+                    }
                 }
 
-                lastInputValue = subOffset.value; // Store internal state for input tracking
+                if (newOffset === currentSyncOffset) return;
 
                 // 2. Shift the actual subtitle timing
                 const tracks = videoPlayer.textTracks;
@@ -2445,53 +2425,53 @@
             });
 
             document.getElementById('subOffsetUp').addEventListener('click', () => {
-                subOffset.stepUp();
-                subOffset.dispatchEvent(new Event('input'));
+                const step = parseFloat(subOffset.dataset.step) || 0.1;
+                applySyncOffset(currentSyncOffset + step);
             });
 
             document.getElementById('subOffsetDown').addEventListener('click', () => {
-                subOffset.stepDown();
-                subOffset.dispatchEvent(new Event('input'));
+                const step = parseFloat(subOffset.dataset.step) || 0.1;
+                applySyncOffset(currentSyncOffset - step);
             });
 
-            // Handles the scroll wheel (Now automatically uses the HTML step attribute, e.g. 0.1)
+            // Handles the scroll wheel using data-step (e.g. 0.1)
             subOffset.addEventListener('wheel', function (e) {
                 e.preventDefault();
-                let step = parseFloat(subOffset.step) || 0.1;
-                let newVal = e.deltaY < 0 ? currentSyncOffset + step : currentSyncOffset - step;
+                const step = parseFloat(subOffset.dataset.step) || 0.1;
+                const newVal = e.deltaY < 0 ? currentSyncOffset + step : currentSyncOffset - step;
                 applySyncOffset(newVal);
             });
 
-            let lastInputValue = 0; // State tracker
-
-            // Handles manually typing or clicking the up/down arrows inside the box
-            subOffset.addEventListener('input', (e) => {
-                let rawNew = parseFloat(e.target.value) || 0;
-                let rawOld = parseFloat(lastInputValue) || 0;
-                let isNegative = signSpan.innerText === '-';
-
-                let diff = rawNew - rawOld;
-                let step = parseFloat(subOffset.step) || 0.1;
-                let newOffset;
-
-                // If the box changed by exactly 1 step, the user clicked a native spinner arrow.
-                // We apply logical + or - regardless of what absolute value the box is displaying.
-                if (Math.abs(Math.abs(diff) - step) < 0.001) {
-                    newOffset = diff > 0 ? currentSyncOffset + step : currentSyncOffset - step;
-                } else {
-                    // Otherwise, the user manually typed a number
-                    if (rawNew < 0) {
-                        newOffset = rawNew;
-                    } else {
-                        newOffset = isNegative ? -Math.abs(rawNew) : Math.abs(rawNew);
-                    }
+            // Handles ArrowUp/ArrowDown stepping and Enter confirmation
+            subOffset.addEventListener('keydown', (e) => {
+                const step = parseFloat(subOffset.dataset.step) || 0.1;
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    applySyncOffset(currentSyncOffset + step);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    applySyncOffset(currentSyncOffset - step);
+                } else if (e.key === 'Enter') {
+                    subOffset.blur();
                 }
+            });
 
-                // Prevent floating-point math drift
-                newOffset = Math.round(newOffset * 100) / 100;
+            // Handles manually typing without clobbering partial input (e.g. "-" or "1.")
+            subOffset.addEventListener('input', (e) => {
+                const raw = e.target.value.trim();
+                if (raw === '' || raw === '+' || raw === '-' || raw === '.' || raw === '+.' || raw === '-.') {
+                    return;
+                }
+                const parsed = parseFloat(raw);
+                if (!isNaN(parsed)) {
+                    applySyncOffset(parsed, false);
+                }
+            });
 
-                applySyncOffset(newOffset);
-                lastInputValue = subOffset.value;
+            // Formats the signed value cleanly on blur (e.g. "-1" -> "-1.00", "1" -> "+1.00")
+            subOffset.addEventListener('blur', () => {
+                const parsed = parseFloat(subOffset.value.trim());
+                applySyncOffset(isNaN(parsed) ? currentSyncOffset : parsed, true);
             });
 
             videoPlayer.textTracks.addEventListener('addtrack', updateSubtitleUI);
