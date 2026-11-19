@@ -3111,52 +3111,56 @@
                 }
             });
 
-            playlistAddInput.addEventListener('change', (e) => {
-                const files = e.target.files;
-                if (files.length > 0) {
-                    let newVideos = [];
-                    let newSrts = [];
+            function addFilesToPlaylist(files, isRestoring = false) {
+                if (!files || files.length === 0) return;
 
-                    for (let i = 0; i < files.length; i++) {
-                        if (files[i].type.startsWith('video/') || files[i].type.startsWith('audio/') || files[i].name.match(/\.(mkv|mp4|m4v|mov|avi|mp3|m4a|aac|wav|ogg|flac)$/i)) {
-                            newVideos.push(files[i]);
-                        } else if (files[i].name.match(/\.(srt|vtt)$/i)) {
-                            newSrts.push(files[i]);
-                        }
-                    }
+                let newVideos = [];
+                let newSrts = [];
 
-                    newVideos.forEach(video => {
-                        const vDot = video.name.lastIndexOf('.');
-                        const baseName = vDot !== -1 ? video.name.substring(0, vDot) : video.name;
-                        const normalizedVideoBase = baseName.replace(/[^a-z0-9]/gi, '').toLowerCase();
-
-                        const matchingSrt = newSrts.find(srt => {
-                            const sDot = srt.name.lastIndexOf('.');
-                            const srtBase = sDot !== -1 ? srt.name.substring(0, sDot) : srt.name;
-                            const normalizedSrtBase = srtBase.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                            return normalizedSrtBase === normalizedVideoBase;
-                        });
-
-                        if (matchingSrt) {
-                            video.pairedSrt = matchingSrt;
-                        }
-                        playlistFiles.push(video);
-                    });
-
-                    renderPlaylist();
-
-                    if (!e.target._isRestoring) {
-                        isPlaylistLockedOpen = true;
-                        playlistPanel.classList.add('open');
-                        clearTimeout(playlistLockTimer);
-                        playlistLockTimer = setTimeout(() => {
-                            isPlaylistLockedOpen = false;
-                            if (!playlistPanel.matches(':hover')) {
-                                playlistPanel.classList.remove('open');
-                            }
-                        }, 2500);
+                for (let i = 0; i < files.length; i++) {
+                    const fileType = files[i].type || '';
+                    if (fileType.startsWith('video/') || fileType.startsWith('audio/') || files[i].name.match(/\.(mkv|mp4|m4v|mov|avi|mp3|m4a|aac|wav|ogg|flac)$/i)) {
+                        newVideos.push(files[i]);
+                    } else if (files[i].name.match(/\.(srt|vtt)$/i)) {
+                        newSrts.push(files[i]);
                     }
                 }
+
+                newVideos.forEach(video => {
+                    const vDot = video.name.lastIndexOf('.');
+                    const baseName = vDot !== -1 ? video.name.substring(0, vDot) : video.name;
+                    const normalizedVideoBase = baseName.replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+                    const matchingSrt = newSrts.find(srt => {
+                        const sDot = srt.name.lastIndexOf('.');
+                        const srtBase = sDot !== -1 ? srt.name.substring(0, sDot) : srt.name;
+                        const normalizedSrtBase = srtBase.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                        return normalizedSrtBase === normalizedVideoBase;
+                    });
+
+                    if (matchingSrt) {
+                        video.pairedSrt = matchingSrt;
+                    }
+                    playlistFiles.push(video);
+                });
+
+                renderPlaylist();
+
+                if (!isRestoring) {
+                    isPlaylistLockedOpen = true;
+                    playlistPanel.classList.add('open');
+                    clearTimeout(playlistLockTimer);
+                    playlistLockTimer = setTimeout(() => {
+                        isPlaylistLockedOpen = false;
+                        if (!playlistPanel.matches(':hover')) {
+                            playlistPanel.classList.remove('open');
+                        }
+                    }, 2500);
+                }
+            }
+
+            playlistAddInput.addEventListener('change', (e) => {
+                addFilesToPlaylist(e.target.files, !!e.target._isRestoring);
                 e.target.value = '';
             });
 
@@ -4371,7 +4375,11 @@
                                 filesToProcess.push(f);
                             }
                         });
-                        processVideoFiles(filesToProcess, msg.isAdd === true);
+                        if (msg.isAdd === true) {
+                            addFilesToPlaylist(filesToProcess);
+                        } else {
+                            processVideoFiles(filesToProcess, false);
+                        }
                     }
                 } catch (err) { }
             });
