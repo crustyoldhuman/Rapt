@@ -1076,6 +1076,33 @@
             font-weight: bold;
             text-align: right;
         }
+
+        .mobile-notice {
+            position: fixed;
+            inset: 0;
+            background-color: #000000;
+            color: #23A620;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+            z-index: 9999;
+        }
+
+        .mobile-notice.visible {
+            display: flex;
+        }
+
+        .mobile-notice-box {
+            max-width: 420px;
+            background-color: rgba(30, 30, 30, 0.85);
+            border: 1px solid #142229;
+            border-radius: 10px;
+            padding: 24px 28px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 
@@ -1493,8 +1520,33 @@
             id="updateLink">here</a> to get the new version.
     </div>
 
+    <div id="mobileNotice" class="mobile-notice">
+        <div class="mobile-notice-box">
+            Sorry! Rapt does not support mobile browsers. Please try out Rapt on your desktop computer.
+        </div>
+    </div>
+
     <script>
         const APP_VERSION = "1.4.0.0"; // Update this with each release
+
+        function isMobileBrowser() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isNativeApp = !!(window.chrome && window.chrome.webview) || urlParams.get('isNative') === '1';
+            if (isNativeApp) return false;
+
+            if (navigator.userAgentData && navigator.userAgentData.mobile) {
+                return true;
+            }
+            const ua = navigator.userAgent || '';
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+            const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+            return isMobileUA || isIPadOS;
+        }
+
+        const isMobile = isMobileBrowser();
+        if (isMobile) {
+            document.getElementById('mobileNotice').classList.add('visible');
+        }
 
         const CURSOR_HIDE_DELAY_MS = 1500; // Change this value to adjust mouse disappear time (in milliseconds)
         const videoFileInput = document.getElementById('videoFileInput');
@@ -1542,6 +1594,7 @@
         const updateLink = document.getElementById('updateLink');
 
         function checkForUpdates() {
+            if (isMobile) return;
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('isPackaged') === '1') return;
 
