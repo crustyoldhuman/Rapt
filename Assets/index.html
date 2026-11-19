@@ -63,8 +63,28 @@
             visibility: hidden;
         }
 
-        #filenameDisplay:empty {
+        #filenameDisplay {
             display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: -1px;
+            background-color: rgba(30, 30, 30, 0.85);
+            border: 1px solid #000000;
+            padding: 8px 16px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+            font-size: 13px;
+            color: #23A620;
+            max-width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+        }
+
+        #filenameDisplay.ready:not(:empty) {
+            display: block;
         }
 
         .bottom-controls {
@@ -1217,7 +1237,6 @@
                 <button id="btnCropToggle" disabled>Crop edges</button>
             </div>
         </div>
-        <div id="filenameDisplay" style="font-size: 16spx; color: #23A620; text-align: center; margin-top: -5px; word-break: break-all; max-width: 90%;"></div>
     </div>
 
     <div id="playOverlay" class="play-overlay visible">
@@ -1230,6 +1249,7 @@
     <div id="audioToast" class="toast hidden" style="bottom: 175px;">Additional audio tracks detected</div>
 
     <div class="bottom-controls hidden" id="bottomControlBar">
+        <div id="filenameDisplay"></div>
         <button id="btnPrev"
             style="width: 32px; height: 32px; padding: 0; display: none; align-items: center; justify-content: center;"
             title="Previous">
@@ -2200,6 +2220,7 @@
                     // }
 
                     currentVideoFile = videoFile;
+                    filenameDisplay.classList.remove('ready');
                     filenameDisplay.innerText = videoFile.name; // Display the active file name
                     removeManualTrack();
                     previousSubSelection = null; // Clean slate for the new video
@@ -2558,6 +2579,7 @@
                 videoPlayer.removeAttribute('controls');
 
                 const fileName = filenameDisplay.textContent;
+                filenameDisplay.classList.add('ready');
                 const savedTime = localStorage.getItem('rapt_resume_' + fileName);
                 const canResume = savedTime && parseFloat(savedTime) > 2 && parseFloat(savedTime) < videoPlayer.duration - 2;
 
@@ -2706,6 +2728,8 @@
                 crtOverlay.classList.add('hidden');
                 videoPlayer.classList.remove('crt-active');
                 currentVideoFile = null;
+                filenameDisplay.classList.remove('ready');
+                filenameDisplay.innerText = '';
                 sizeSlider.disabled = true;
                 vidSizeGroup.classList.add('disabled-control');
                 btnCropToggle.disabled = true;
