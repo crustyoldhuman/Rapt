@@ -1217,7 +1217,7 @@
                 <button id="btnCropToggle" disabled>Crop edges</button>
             </div>
         </div>
-        <div id="filenameDisplay" style="font-size: 13px; color: #23A620; text-align: center; margin-top: -5px; word-break: break-all; max-width: 90%;"></div>
+        <div id="filenameDisplay" style="font-size: 16spx; color: #23A620; text-align: center; margin-top: -5px; word-break: break-all; max-width: 90%;"></div>
     </div>
 
     <div id="playOverlay" class="play-overlay visible">
@@ -1762,6 +1762,7 @@
         }
 
         btnCropToggle.addEventListener('click', () => {
+            clearTimeout(hideTimeout);
             cropPopupOverlay.classList.add('visible');
         });
 
@@ -3936,7 +3937,7 @@
                 }
 
                 clearTimeout(hideTimeout);
-                if (!bottomControlBar.contains(e.target)) {
+                if (!bottomControlBar.contains(e.target) && !cropPopupOverlay.classList.contains('visible')) {
                     hideTimeout = setTimeout(() => {
                         bottomControlBar.classList.add('hidden');
                         if (!isCursorHidden) {
@@ -4077,9 +4078,12 @@
                 bottomControlBar.classList.add('hidden');
             }
 
-            if (!isOverControlBar && !isOverBottomBar && !isOverPlaylist) {
+            const isCropPopupVisible = cropPopupOverlay.classList.contains('visible');
+
+            if (!isOverControlBar && !isOverBottomBar && !isOverPlaylist && !isCropPopupVisible) {
                 hideTimeout = setTimeout(() => {
                     if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0) return;
+                    if (cropPopupOverlay.classList.contains('visible')) return;
                     controlBar.classList.add('hidden');
                     bottomControlBar.classList.add('hidden');
                     if (!isCursorHidden) {
