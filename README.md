@@ -7,7 +7,7 @@
 -->
 Rapt is a native Windows desktop application ***or*** standalone HTML5 video player for PC designed for an immersive dark room playback experience and to apply super resolution upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files with zero configuration, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/257934b5-de27-41bc-bf7f-79ed64452649" /></p>
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/ffd924bf-b8eb-45c8-a164-af7f5197df1f" /></p>
 
 ***Note:*** *Rapt is not intended for mobile devices.*
 
@@ -36,11 +36,12 @@ Rapt is a brutalist and clean viewing experience for your local media. Just load
 - **Video Scaling:** Because low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
 
 - **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
-<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/f06a8a1b-733c-49b7-a692-5841407364ff" /></p>
-
-- **CRT Filter:** Crank up the nostalgia by enabling the CRT filter on old videos--looks great on old cartoons
+<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/d6fae595-6160-4b57-a9cf-9b32988bf515" /></p>
  
 - **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and upscalers waste resources trying to process encoded black letterbox bars. Rapt lets you crop the edges in real-time to fix both of these problems.
+
+- **CRT Filter:** Crank up the nostalgia by enabling the CRT filter on old videos--looks great on old cartoons
+<p align="center"><img width="600" alt="CRTPromo" src="https://github.com/user-attachments/assets/d2717322-d2dc-42bf-aa03-59656d5649a4" /></p>
   
 - **Playlist Manager:** Load multiple videos and save/load your playlists for continuous playback. Drag-and-drop your media to re-sort your list. Saving/loading is only supported on Windows app. 
 
