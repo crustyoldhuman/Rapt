@@ -462,10 +462,14 @@
             height: 120vh;
             transform: translate(-50%, -50%);
             z-index: 1;
-            filter: blur(100px) saturate(150%) brightness(1.2);
+            filter: blur(52px) saturate(150%) brightness(1.2);
             opacity: 0.9;
             pointer-events: none;
             transition: opacity 0.5s ease;
+        }
+
+        #ambientCanvas.audio-glow {
+            filter: blur(100px) saturate(150%) brightness(1.2);
         }
 
         #ambientCanvas.hidden {
@@ -1663,6 +1667,7 @@
         const playlistNativeControls = document.getElementById('playlistNativeControls');
 
         let playlistFiles = [];
+        let lastSavedPlaylistJson = '[]';
         let selectedPlaylistIndex = -1;
         let currentPlayIndex = -1;
         let draggedItemIndex = null;
@@ -1699,6 +1704,26 @@
         const glowSlider = document.getElementById('glowSlider');
         const ambientCanvas = document.getElementById('ambientCanvas');
         const ambientCtx = ambientCanvas.getContext('2d', { alpha: false });
+
+        const createStripCanvas = (w, h) => {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext('2d', { alpha: false });
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'medium';
+            return { canvas: c, ctx };
+        };
+
+        const { canvas: ambientHMidCanvas, ctx: ambientHMidCtx } = createStripCanvas(128, 4);
+        const { canvas: ambientVMidCanvas, ctx: ambientVMidCtx } = createStripCanvas(4, 72);
+        const { canvas: ambientTopCanvas, ctx: ambientTopCtx } = createStripCanvas(32, 1);
+        const { canvas: ambientBotCanvas, ctx: ambientBotCtx } = createStripCanvas(32, 1);
+        const { canvas: ambientLeftCanvas, ctx: ambientLeftCtx } = createStripCanvas(1, 18);
+        const { canvas: ambientRightCanvas, ctx: ambientRightCtx } = createStripCanvas(1, 18);
+
+        const ambientStageCanvas = document.createElement('canvas');
+        const ambientStageCtx = ambientStageCanvas.getContext('2d', { alpha: false });
 
         const visualizerCanvas = document.getElementById('visualizerCanvas');
         const visualizerCtx = visualizerCanvas.getContext('2d');
@@ -1765,7 +1790,31 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;')
                 .replace(/&lt;(\/?(i|b|u))&gt;/gi, '<$1>')
-                .replace(/&lt;(\/?font.*?)&gt;/gi, (match, p1) => '<' + p1.replace(/&quot;/g, '"').replace(/&#39;/g, "'") + '>');
+                .replace(/&lt;\/font\s*&gt;/gi, '</font>')
+                .replace(/&lt;font(?:\s+((?:(?!&lt;|&gt;).)*))?&gt;/gi, (match, rawAttrs) => {
+                    if (!rawAttrs) return '<font>';
+                    const decoded = rawAttrs.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+                    const safeAttrs = [];
+                    const seen = new Set();
+                    const attrRegex = /(?:^|\s)(color|size|face)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+                    let m;
+                    while ((m = attrRegex.exec(decoded)) !== null) {
+                        const name = m[1].toLowerCase();
+                        if (seen.has(name)) continue;
+                        const val = (m[2] ?? m[3] ?? m[4] ?? '').trim();
+                        if (name === 'color' && /^(?:#[0-9a-fA-F]{3,8}|[a-zA-Z]{1,20})$/.test(val)) {
+                            seen.add(name);
+                            safeAttrs.push(`color="${val}"`);
+                        } else if (name === 'size' && /^[+-]?\d{1,2}$/.test(val)) {
+                            seen.add(name);
+                            safeAttrs.push(`size="${val}"`);
+                        } else if (name === 'face' && /^[a-zA-Z0-9 ,\-_]{1,64}$/.test(val)) {
+                            seen.add(name);
+                            safeAttrs.push(`face="${val}"`);
+                        }
+                    }
+                    return safeAttrs.length > 0 ? `<font ${safeAttrs.join(' ')}>` : '<font>';
+                });
         }
 
         function renderCustomSubtitles(e) {
@@ -1874,10 +1923,14 @@
             videoFileInput.value = '';
 
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('isNative') === '1') {
+            const isNativeApp = !!(window.chrome && window.chrome.webview) || urlParams.get('isNative') === '1';
+            if (isNativeApp) {
                 const introText = document.getElementById('introText');
                 if (introText) {
                     introText.innerText = 'Double-click anywhere, or drag and drop a media file';
+                }
+                if (playlistNativeControls) {
+                    playlistNativeControls.style.display = 'flex';
                 }
             }
 
@@ -2752,6 +2805,7 @@
 
             function manageAmbientState() {
                 cancelAnimationFrame(ambientAnimId);
+                ambientCanvas.classList.toggle('audio-glow', isAudioFile);
                 if (!isAmbientEnabled || !videoPlayer._hasStartedPlaying) {
                     ambientCanvas.classList.add('hidden');
                     ambientCanvas.style.opacity = '';
@@ -2767,8 +2821,14 @@
             }
 
             function resizeAmbientCanvas() {
-                ambientCanvas.width = window.innerWidth / 8;
-                ambientCanvas.height = window.innerHeight / 8;
+                const w = Math.max(1, Math.round(window.innerWidth / 8));
+                const h = Math.max(1, Math.round(window.innerHeight / 8));
+                ambientCanvas.width = w;
+                ambientCanvas.height = h;
+                ambientStageCanvas.width = w;
+                ambientStageCanvas.height = h;
+                ambientStageCtx.imageSmoothingEnabled = true;
+                ambientStageCtx.imageSmoothingQuality = 'low';
                 if (videoPlayer.paused && isAmbientEnabled) {
                     isFirstFrame = true;
                     drawAmbientFrame();
@@ -2930,51 +2990,118 @@
                 const mapX = (x) => ((x + 0.1 * window.innerWidth) / (1.2 * window.innerWidth)) * cw;
                 const mapY = (y) => ((y + 0.1 * window.innerHeight) / (1.2 * window.innerHeight)) * ch;
 
-                const destX1 = 0;
-                const destY1 = 0;
-                const destX2 = Math.max(0, mapX(videoScreenLeft));
-                const destY2 = Math.max(0, mapY(videoScreenTop));
-                const destX3 = Math.min(cw, mapX(videoScreenLeft + videoScreenW));
-                const destY3 = Math.min(ch, mapY(videoScreenTop + videoScreenH));
-                const destX4 = cw;
-                const destY4 = ch;
+                const destX2 = Math.max(0, Math.min(cw, Math.round(mapX(videoScreenLeft))));
+                const destY2 = Math.max(0, Math.min(ch, Math.round(mapY(videoScreenTop))));
+                const destX3 = Math.max(destX2, Math.min(cw, Math.round(mapX(videoScreenLeft + videoScreenW))));
+                const destY3 = Math.max(destY2, Math.min(ch, Math.round(mapY(videoScreenTop + videoScreenH))));
 
-                const dwLeft = destX2 - destX1;
+                const dwLeft = destX2;
                 const dwCenter = destX3 - destX2;
-                const dwRight = destX4 - destX3;
-                const dhTop = destY2 - destY1;
+                const dwRight = cw - destX3;
+                const dhTop = destY2;
                 const dhCenter = destY3 - destY2;
-                const dhBottom = destY4 - destY3;
+                const dhBottom = ch - destY3;
 
                 const now = performance.now();
                 lastAmbientTime = now;
 
-                // 0.08 is the strict mathematical floor for HTML5 8-bit canvases. 
-                // Any lower, and sub-decimal color shifts round down to 0, causing permanent ghosting.
-                ambientCtx.globalAlpha = isFirstFrame ? 1.0 : 0.08;
+                const zw = ambientTopCanvas.width;
+                const zh = ambientLeftCanvas.height;
+                const bandSize = Math.max(2, Math.round(Math.min(srcW, srcH) * 0.05));
+                const bandW = Math.min(srcW, bandSize);
+                const bandH = Math.min(srcH, bandSize);
 
-                const edgeW = Math.max(1, Math.round(srcW * 0.01));
-                const edgeH = Math.max(1, Math.round(srcH * 0.01));
-                const sx1 = srcX;
-                const sy1 = srcY;
-                const sx2 = srcX + srcW - edgeW;
-                const sy2 = srcY + srcH - edgeH;
+                // Two-stage GPU downscale per 1px-thick edge strip (outer 5% uniform depth, zero interior row bleed)
+                ambientHMidCtx.drawImage(videoPlayer, srcX, srcY, srcW, bandH, 0, 0, ambientHMidCanvas.width, ambientHMidCanvas.height);
+                ambientTopCtx.drawImage(ambientHMidCanvas, 0, 0, ambientHMidCanvas.width, ambientHMidCanvas.height, 0, 0, zw, 1);
 
+                ambientHMidCtx.drawImage(videoPlayer, srcX, srcY + srcH - bandH, srcW, bandH, 0, 0, ambientHMidCanvas.width, ambientHMidCanvas.height);
+                ambientBotCtx.drawImage(ambientHMidCanvas, 0, 0, ambientHMidCanvas.width, ambientHMidCanvas.height, 0, 0, zw, 1);
+
+                ambientVMidCtx.drawImage(videoPlayer, srcX, srcY, bandW, srcH, 0, 0, ambientVMidCanvas.width, ambientVMidCanvas.height);
+                ambientLeftCtx.drawImage(ambientVMidCanvas, 0, 0, ambientVMidCanvas.width, ambientVMidCanvas.height, 0, 0, 1, zh);
+
+                ambientVMidCtx.drawImage(videoPlayer, srcX + srcW - bandW, srcY, bandW, srcH, 0, 0, ambientVMidCanvas.width, ambientVMidCanvas.height);
+                ambientRightCtx.drawImage(ambientVMidCanvas, 0, 0, ambientVMidCanvas.width, ambientVMidCanvas.height, 0, 0, 1, zh);
+
+                const drawCorner = (x, y, w, h, hSrc, hIdx, vSrc, vIdx) => {
+                    ambientStageCtx.globalAlpha = 1.0;
+                    ambientStageCtx.drawImage(hSrc, hIdx, 0, 1, 1, x, y, w, h);
+                    ambientStageCtx.globalAlpha = 0.5;
+                    ambientStageCtx.drawImage(vSrc, 0, vIdx, 1, 1, x, y, w, h);
+                    ambientStageCtx.globalAlpha = 1.0;
+                };
+
+                ambientStageCtx.globalAlpha = 1.0;
+
+                // Project perimeter zones full-bleed onto staging canvas
                 if (dhTop > 0) {
-                    if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, edgeW, edgeH, destX1, destY1, dwLeft, dhTop);
-                    if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, edgeH, destX2, destY1, dwCenter, dhTop);
-                    if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, edgeW, edgeH, destX3, destY1, dwRight, dhTop);
+                    if (dwLeft > 0) drawCorner(0, 0, dwLeft, dhTop, ambientTopCanvas, 0, ambientLeftCanvas, 0);
+                    if (dwCenter > 0) ambientStageCtx.drawImage(ambientTopCanvas, 0, 0, zw, 1, destX2, 0, dwCenter, dhTop);
+                    if (dwRight > 0) drawCorner(destX3, 0, dwRight, dhTop, ambientTopCanvas, zw - 1, ambientRightCanvas, 0);
                 }
                 if (dhCenter > 0) {
-                    if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, edgeW, srcH, destX1, destY2, dwLeft, dhCenter);
-                    if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, srcH, destX2, destY2, dwCenter, dhCenter);
-                    if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, edgeW, srcH, destX3, destY2, dwRight, dhCenter);
+                    if (dwLeft > 0) ambientStageCtx.drawImage(ambientLeftCanvas, 0, 0, 1, zh, 0, destY2, dwLeft, dhCenter);
+                    if (dwCenter > 0) {
+                        const midX = destX2 + (dwCenter / 2);
+                        const midY = destY2 + (dhCenter / 2);
+
+                        ambientStageCtx.save();
+                        ambientStageCtx.beginPath();
+                        ambientStageCtx.moveTo(destX2, destY2);
+                        ambientStageCtx.lineTo(destX3, destY2);
+                        ambientStageCtx.lineTo(midX, midY);
+                        ambientStageCtx.closePath();
+                        ambientStageCtx.clip();
+                        ambientStageCtx.drawImage(ambientTopCanvas, 0, 0, zw, 1, destX2, destY2, dwCenter, dhCenter / 2);
+                        ambientStageCtx.restore();
+
+                        ambientStageCtx.save();
+                        ambientStageCtx.beginPath();
+                        ambientStageCtx.moveTo(destX2, destY3);
+                        ambientStageCtx.lineTo(destX3, destY3);
+                        ambientStageCtx.lineTo(midX, midY);
+                        ambientStageCtx.closePath();
+                        ambientStageCtx.clip();
+                        ambientStageCtx.drawImage(ambientBotCanvas, 0, 0, zw, 1, destX2, midY, dwCenter, dhCenter / 2);
+                        ambientStageCtx.restore();
+
+                        ambientStageCtx.save();
+                        ambientStageCtx.beginPath();
+                        ambientStageCtx.moveTo(destX2, destY2);
+                        ambientStageCtx.lineTo(destX2, destY3);
+                        ambientStageCtx.lineTo(midX, midY);
+                        ambientStageCtx.closePath();
+                        ambientStageCtx.clip();
+                        ambientStageCtx.drawImage(ambientLeftCanvas, 0, 0, 1, zh, destX2, destY2, dwCenter / 2, dhCenter);
+                        ambientStageCtx.restore();
+
+                        ambientStageCtx.save();
+                        ambientStageCtx.beginPath();
+                        ambientStageCtx.moveTo(destX3, destY2);
+                        ambientStageCtx.lineTo(destX3, destY3);
+                        ambientStageCtx.lineTo(midX, midY);
+                        ambientStageCtx.closePath();
+                        ambientStageCtx.clip();
+                        ambientStageCtx.drawImage(ambientRightCanvas, 0, 0, 1, zh, midX, destY2, dwCenter / 2, dhCenter);
+                        ambientStageCtx.restore();
+                    }
+                    if (dwRight > 0) ambientStageCtx.drawImage(ambientRightCanvas, 0, 0, 1, zh, destX3, destY2, dwRight, dhCenter);
                 }
                 if (dhBottom > 0) {
-                    if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, edgeW, edgeH, destX1, destY3, dwLeft, dhBottom);
-                    if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, srcW, edgeH, destX2, destY3, dwCenter, dhBottom);
-                    if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy2, edgeW, edgeH, destX3, destY3, dwRight, dhBottom);
+                    if (dwLeft > 0) drawCorner(0, destY3, dwLeft, dhBottom, ambientBotCanvas, 0, ambientLeftCanvas, zh - 1);
+                    if (dwCenter > 0) ambientStageCtx.drawImage(ambientBotCanvas, 0, 0, zw, 1, destX2, destY3, dwCenter, dhBottom);
+                    if (dwRight > 0) drawCorner(destX3, destY3, dwRight, dhBottom, ambientBotCanvas, zw - 1, ambientRightCanvas, zh - 1);
                 }
+
+                // Single temporal blend pass onto display canvas
+                ambientCtx.globalAlpha = isFirstFrame ? 1.0 : 0.11;
+                ambientCtx.drawImage(ambientStageCanvas, 0, 0);
+                isFirstFrame = false;
+
+                // Single temporal blend pass onto display canvas
+                ambientCtx.globalAlpha = isFirstFrame ? 1.0 : 0.11;
+                ambientCtx.drawImage(ambientStageCanvas, 0, 0);
                 isFirstFrame = false;
             }
 
@@ -2984,7 +3111,8 @@
                 ambientAnimId = requestAnimationFrame(drawAmbientLoop);
                 
                 const now = timestamp || performance.now();
-                if (now - lastAmbientDraw < 33) return; // Cap at ~30 FPS
+                const frameInterval = isAudioFile ? 33 : 45; // ~30 FPS audio, ~22 FPS video
+                if (now - lastAmbientDraw < frameInterval) return;
                 lastAmbientDraw = now;
                 
                 drawAmbientFrame();
@@ -3169,12 +3297,27 @@
                 e.target.value = '';
             });
 
-            function renderPlaylist() {
+            function saveNativePlaylist() {
+                if (!(window.chrome && window.chrome.webview)) return;
+                const items = playlistFiles.map(f => f.name);
+                const serialized = JSON.stringify(items);
+                if (serialized === lastSavedPlaylistJson) return;
+                lastSavedPlaylistJson = serialized;
+                window.chrome.webview.postMessage(JSON.stringify({ type: 'SAVE_PLAYLIST', items: items }));
+            }
+
+            function renderPlaylist(skipSave = false) {
                 btnPlaylistClear.disabled = playlistFiles.length === 0;
 
                 const showNav = playlistFiles.length > 1;
                 btnPrev.style.display = showNav ? 'inline-flex' : 'none';
                 btnNext.style.display = showNav ? 'inline-flex' : 'none';
+
+                if (skipSave) {
+                    lastSavedPlaylistJson = JSON.stringify(playlistFiles.map(f => f.name));
+                } else {
+                    saveNativePlaylist();
+                }
 
                 playlistList.innerHTML = '';
                 playlistFiles.forEach((file, index) => {
@@ -3803,11 +3946,11 @@
                     const cy = (centerY / 100) * canvasH;
                     const halfW = Math.max(1, visibleW / 2);
                     const halfH = Math.max(1, visibleH / 2);
-                    
+
                     let fadeScale = 2.2;
                     const corners = [
-                        {x: 0, y: 0}, {x: canvasW, y: 0}, 
-                        {x: 0, y: canvasH}, {x: canvasW, y: canvasH}
+                        { x: 0, y: 0 }, { x: canvasW, y: 0 },
+                        { x: 0, y: canvasH }, { x: canvasW, y: canvasH }
                     ];
                     corners.forEach(c => {
                         const dx = (c.x - cx) / halfW;
@@ -3831,6 +3974,11 @@
                     }
                     ambientCanvas.style.webkitMaskComposite = '';
                     ambientCanvas.style.maskComposite = '';
+
+                    if (videoPlayer.paused && isAmbientEnabled && !isAudioFile) {
+                        isFirstFrame = true;
+                        drawAmbientFrame();
+                    }
 
                     const rect = videoPlayer.getBoundingClientRect();
                     const crtLeft = rect.left + (rect.width * cL);
@@ -3869,7 +4017,7 @@
                 if (isFitToPageEnabled && nativeWidth && nativeHeight) {
                     sizeSlider.value = currentFitScale;
                     updateVideoSize(currentFitScale);
-                } else if (isCrtEnabled && !isAudioFile && videoPlayer.readyState > 0) {
+                } else if ((isCrtEnabled || isAmbientEnabled) && !isAudioFile && videoPlayer.readyState > 0) {
                     updateVideoSize(sizeSlider.value);
                 }
             });
@@ -4343,15 +4491,29 @@
                         }
                     } else if (msg.type === 'RESTORE_PLAYLIST') {
                         playlistFiles = [];
+                        currentPlayIndex = -1;
+                        selectedPlaylistIndex = -1;
                         msg.items.forEach(name => {
                             playlistFiles.push({
                                 name: name,
-                                type: "video/mp4",
+                                type: name.match(/\.(mp3|m4a|aac|wav|ogg|flac)$/i) ? "audio/mpeg" : "video/mp4",
                                 isVirtual: true,
                                 videoUrl: `https://video.rapt/${encodeURIComponent(name)}`,
                                 audioUrl: `https://audio.rapt/${encodeURIComponent(name)}`
                             });
                         });
+                        renderPlaylist(!!msg.isAutoRestore);
+                        if (!msg.isAutoRestore) {
+                            isPlaylistLockedOpen = true;
+                            playlistPanel.classList.add('open');
+                            clearTimeout(playlistLockTimer);
+                            playlistLockTimer = setTimeout(() => {
+                                isPlaylistLockedOpen = false;
+                                if (!playlistPanel.matches(':hover')) {
+                                    playlistPanel.classList.remove('open');
+                                }
+                            }, 2500);
+                        }
                     } else if (msg.type === 'LOAD_MEDIA') {
                         let vFile = {
                             name: msg.fileName,
@@ -4389,7 +4551,10 @@
                             processVideoFiles(filesToProcess, false);
                         }
                     }
-                } catch (err) { }
+                } catch (err) {
+                    console.warn('bridge:', err);
+                    window.chrome.webview.postMessage(`LOG:Bridge listener error: ${err?.stack || err}`);
+                }
             });
             window.chrome.webview.postMessage(JSON.stringify({ type: 'BRIDGE_READY' }));
         }

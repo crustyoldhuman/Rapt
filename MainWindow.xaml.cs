@@ -24,6 +24,7 @@ namespace Rapt
 		private CancellationTokenSource? _subtitleCts;
 		private readonly Dictionary<string, string> _fileMap = new(StringComparer.OrdinalIgnoreCase);
 		private readonly string _playlistFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "playlist.json");
+		private readonly SemaphoreSlim _playlistSaveLock = new(1, 1);
 
 		[System.Runtime.InteropServices.LibraryImport("user32.dll")]
 		private static partial int ShowCursor([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] bool bShow);
@@ -308,7 +309,11 @@ namespace Rapt
 				// Let WebView2 handle file drops and pointer events natively
 				var coreWv = PlayerWebView.CoreWebView2;
 				coreWv.Settings.AreDefaultContextMenusEnabled = false;
+#if DEBUG
+				coreWv.Settings.AreDevToolsEnabled = true;
+#else
 				coreWv.Settings.AreDevToolsEnabled = false;
+#endif
 
 				coreWv.NewWindowRequested += async (s, e) =>
 				{
@@ -571,6 +576,41 @@ namespace Rapt
 						{
 							_isPageReady = true;
 
+							if (File.Exists(_playlistFile))
+							{
+								try
+								{
+									if (JsonNode.Parse(File.ReadAllText(_playlistFile)) is JsonArray json)
+									{
+										var restoreNames = new JsonArray();
+										foreach (var item in json)
+										{
+											string? name = (string?)item?["name"];
+											string? path = (string?)item?["path"];
+
+											if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(path) && File.Exists(path))
+											{
+												_fileMap[name] = path;
+												restoreNames.Add(name);
+											}
+										}
+										if (restoreNames.Count > 0)
+										{
+											SendBridgeMessage(new JsonObject
+											{
+												["type"] = "RESTORE_PLAYLIST",
+												["items"] = restoreNames,
+												["isAutoRestore"] = true
+											}.ToJsonString());
+										}
+									}
+								}
+								catch (Exception ex)
+								{
+									Debug.WriteLine($"[C#] Failed to restore playlist: {ex}");
+								}
+							}
+
 							if (_pendingFilePaths.Count > 0)
 							{
 								_ = ProcessBatchAsync([.. _pendingFilePaths]);
@@ -592,18 +632,18 @@ namespace Rapt
 										saveArray.Add(new JsonObject { ["name"] = name, ["path"] = fullPath });
 									}
 								}
-								Directory.CreateDirectory(Path.GetDirectoryName(_playlistFile)!);
-								await File.WriteAllTextAsync(_playlistFile, saveArray.ToJsonString());
+								await _playlistSaveLock.WaitAsync();
+								try
+								{
+									Directory.CreateDirectory(Path.GetDirectoryName(_playlistFile)!);
+									await File.WriteAllTextAsync(_playlistFile, saveArray.ToJsonString());
+								}
+								finally
+								{
+									_playlistSaveLock.Release();
+								}
 							}
-						}
-
-						if (msg != null && msg.Contains("\"type\":\"PLAY_RESTORED\""))
-						{
-							string? name = (string?)JsonNode.Parse(msg)?["name"];
-							if (name != null && _fileMap.TryGetValue(name, out string? fullPath) && fullPath != null)
-							{
-								_ = ProcessExternalFileAsync(fullPath);
-							}
+							return;
 						}
 
 						if (msg != null && msg.Contains("\"type\":\"EXPORT_PLAYLIST\""))
@@ -764,7 +804,10 @@ namespace Rapt
 							}
 						}
 					}
-					catch { }
+					catch (Exception ex)
+					{
+						Debug.WriteLine($"[C#] WebMessageReceived error: {ex}");
+					}
 				};
 
 				// Intercept files dragged & dropped directly from Windows Explorer if you also want auto-demuxing on drop
