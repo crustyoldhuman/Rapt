@@ -10,7 +10,7 @@
 	<Identity    Name="crustyoldhuman.RaptVideoPlayer"    Publisher="CN=B6D2EA96-72C0-489A-B1AB-D0B04A7E7493"    Version="1.4.1.0" />
 	<mp:PhoneIdentity PhoneProductId="d12293f0-a8f6-415d-a918-28adaea0b4e7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 	<Properties>
-		<DisplayName>Rapt Player</DisplayName>
+		<DisplayName>Rapt Video Player</DisplayName>
 		<PublisherDisplayName>crustyoldhuman</PublisherDisplayName>
 		<Logo>Assets\StoreLogo.png</Logo>
 	</Properties>
