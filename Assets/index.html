@@ -1564,12 +1564,12 @@
             </div>
             <input type="range" id="volumeSlider" min="0" max="2.5" step="0.01" value="1">
         </div>
-        <button id="btnFit" class="icon-btn" title="Fit to Page: Off">
+        <button id="btnFit" class="icon-btn" title="Fit to Page">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
-                <line id="fitLine" x1="12" y1="16" x2="12" y2="8"></line>
-                <polyline id="fitArrowBottom" points="6 22 12 16 18 22"></polyline>
-                <polyline id="fitArrowTop" points="6 2 12 8 18 2"></polyline>
+                <line id="fitLine" x1="12" y1="22" x2="12" y2="2"></line>
+                <polyline id="fitArrowBottom" points="5 15 12 22 19 15"></polyline>
+                <polyline id="fitArrowTop" points="5 9 12 2 19 9"></polyline>
             </svg>
         </button>
         <button id="btnFullscreen" class="icon-btn" title="Fullscreen">
@@ -2024,22 +2024,22 @@
             isFitToPageEnabled = enabled;
             localStorage.setItem('rapt_fitToPage', enabled);
             if (enabled) {
-                btnFit.title = 'Fit to Page';
-                fitLine.setAttribute('y1', '22');
-                fitLine.setAttribute('y2', '2');
-                fitArrowBottom.setAttribute('points', '5 15 12 22 19 15');
-                fitArrowTop.setAttribute('points', '5 9 12 2 19 9');
+                btnFit.title = 'Fit to Page: Off';
+                fitLine.setAttribute('y1', '16');
+                fitLine.setAttribute('y2', '8');
+                fitArrowBottom.setAttribute('points', '6 22 12 16 18 22');
+                fitArrowTop.setAttribute('points', '6 2 12 8 18 2');
                 if (applyScale && videoPlayer.readyState > 0 && nativeWidth && nativeHeight) {
                     sizeSlider.value = currentFitScale;
                     updateVideoSize(currentFitScale);
                     syncRangeFills();
                 }
             } else {
-                btnFit.title = 'Fit to Page: Off';
-                fitLine.setAttribute('y1', '16');
-                fitLine.setAttribute('y2', '8');
-                fitArrowBottom.setAttribute('points', '6 22 12 16 18 22');
-                fitArrowTop.setAttribute('points', '6 2 12 8 18 2');
+                btnFit.title = 'Fit to Page';
+                fitLine.setAttribute('y1', '22');
+                fitLine.setAttribute('y2', '2');
+                fitArrowBottom.setAttribute('points', '5 15 12 22 19 15');
+                fitArrowTop.setAttribute('points', '5 9 12 2 19 9');
                 if (applyScale && videoPlayer.readyState > 0 && nativeWidth && nativeHeight) {
                     const defaultScale = getDefaultVideoScale();
                     sizeSlider.value = defaultScale;
