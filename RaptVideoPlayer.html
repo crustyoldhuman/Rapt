@@ -1564,7 +1564,7 @@
             </div>
             <input type="range" id="volumeSlider" min="0" max="2.5" step="0.01" value="1">
         </div>
-        <button id="btnFit" class="icon-btn" title="Fit to Page">
+        <button id="btnFit" class="icon-btn" title="Fit to Player">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <line id="fitLine" x1="12" y1="22" x2="12" y2="2"></line>
@@ -1704,7 +1704,7 @@
                     <span>Arrows L / R</span>
                     <div>Skip 5s</div>
                     <span>T</span>
-                    <div>Toggle Fit to Page</div>
+                    <div>Toggle Fit to Player</div>
 
                     <span>J / L</span>
                     <div>Skip 20s</div>
@@ -2024,7 +2024,7 @@
             isFitToPageEnabled = enabled;
             localStorage.setItem('rapt_fitToPage', enabled);
             if (enabled) {
-                btnFit.title = 'Fit to Page: Off';
+                btnFit.title = 'Fit to Player: Off';
                 fitLine.setAttribute('y1', '16');
                 fitLine.setAttribute('y2', '8');
                 fitArrowBottom.setAttribute('points', '6 22 12 16 18 22');
@@ -2035,7 +2035,7 @@
                     syncRangeFills();
                 }
             } else {
-                btnFit.title = 'Fit to Page';
+                btnFit.title = 'Fit to Player';
                 fitLine.setAttribute('y1', '22');
                 fitLine.setAttribute('y2', '2');
                 fitArrowBottom.setAttribute('points', '5 15 12 22 19 15');
