@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapt Player 1.4.1</title>
+    <title>Rapt Player 1.4.2</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='4' fill='%23142229' stroke='black' stroke-width='1'/%3E%3Cpolygon points='9,7 18,12 9,17' fill='%2323A620'/%3E%3C/svg%3E"
         type="image/svg+xml">
@@ -617,16 +617,11 @@
             z-index: 2;
         }
 
-        video.crt-active {
-            filter: contrast(1.04) brightness(1.04) blur(0.35px);
-        }
-
         #crtOverlay {
             position: fixed;
             z-index: 3;
             pointer-events: none;
             overflow: hidden;
-            mix-blend-mode: multiply;
             background:
                 repeating-linear-gradient(
                     to bottom,
@@ -637,9 +632,10 @@
                 ),
                 repeating-linear-gradient(
                     to right,
-                    rgba(255, 0, 0, 0.03) 0px,
-                    rgba(0, 255, 0, 0.03) 1px,
-                    rgba(0, 0, 255, 0.03) 2px
+                    rgba(0, 0, 0, 0) 0px,
+                    rgba(0, 0, 0, 0) 2px,
+                    rgba(0, 0, 0, 0.06) 2px,
+                    rgba(0, 0, 0, 0.06) 3px
                 );
             box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.45);
         }
@@ -739,9 +735,19 @@
         }
 
         .play-icon {
-            font-size: 80px;
-            line-height: 1;
+            width: 84px;
+            height: 84px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 10px;
+        }
+
+        .play-icon svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            filter: drop-shadow(0 0 6px rgba(62, 235, 30, 0.7)) drop-shadow(0 0 14px rgba(35, 166, 32, 0.45));
         }
 
         .play-text {
@@ -855,9 +861,11 @@
         }
 
         .playback-indicator svg {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             fill: currentColor;
+            overflow: visible;
+            filter: drop-shadow(0 0 4px rgba(62, 235, 30, 0.7)) drop-shadow(0 0 9px rgba(35, 166, 32, 0.45));
         }
 
         #indicatorPlay {
@@ -1376,7 +1384,15 @@
 </head>
 
 <body>
-    <svg aria-hidden="true" style="display: none;">
+    <svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none;">
+        <defs>
+            <radialGradient id="raptPlayGrad" cx="44%" cy="34%" r="65%" fx="38%" fy="25%">
+                <stop offset="0%" stop-color="#5eff1a" />
+                <stop offset="55%" stop-color="#32dc14" />
+                <stop offset="85%" stop-color="#20a815" />
+                <stop offset="100%" stop-color="#157810" />
+            </radialGradient>
+        </defs>
         <symbol id="ico-up" viewBox="0 0 24 24">
             <path d="M12 4l-8 10h16z" />
         </symbol>
@@ -1390,9 +1406,17 @@
         <symbol id="ico-play" viewBox="0 0 24 24">
             <polygon points="5 3 19 12 5 21 5 3" />
         </symbol>
+        <symbol id="ico-play-rapt" viewBox="0 0 100 100">
+            <path d="M 13 19.19 A 10.5 10.5 0 0 1 28.75 10.09 L 82.12 40.91 A 10.5 10.5 0 0 1 82.12 59.09 L 28.75 89.91 A 10.5 10.5 0 0 1 13 80.81 Z"
+                fill="url(#raptPlayGrad)" stroke="#000000" stroke-width="3.8" stroke-linejoin="round" />
+        </symbol>
         <symbol id="ico-pause" viewBox="0 0 24 24">
             <rect x="6" y="4" width="4" height="16" />
             <rect x="14" y="4" width="4" height="16" />
+        </symbol>
+        <symbol id="ico-pause-rapt" viewBox="0 0 100 100">
+            <rect x="18" y="12" width="24" height="76" rx="8" fill="url(#raptPlayGrad)" stroke="#000000" stroke-width="3.8" />
+            <rect x="58" y="12" width="24" height="76" rx="8" fill="url(#raptPlayGrad)" stroke="#000000" stroke-width="3.8" />
         </symbol>
     </svg>
 
@@ -1540,12 +1564,12 @@
             </div>
             <input type="range" id="volumeSlider" min="0" max="2.5" step="0.01" value="1">
         </div>
-        <button id="btnFit" class="icon-btn" title="Fit to Page">
+        <button id="btnFit" class="icon-btn" title="Fit to Page: Off">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="22" x2="12" y2="2"></line>
-                <polyline points="5 15 12 22 19 15"></polyline>
-                <polyline points="5 9 12 2 19 9"></polyline>
+                <line id="fitLine" x1="12" y1="16" x2="12" y2="8"></line>
+                <polyline id="fitArrowBottom" points="6 22 12 16 18 22"></polyline>
+                <polyline id="fitArrowTop" points="6 2 12 8 18 2"></polyline>
             </svg>
         </button>
         <button id="btnFullscreen" class="icon-btn" title="Fullscreen">
@@ -1567,8 +1591,8 @@
     <audio id="audioPlayer" crossorigin="anonymous"></audio>
 
     <div id="playbackIndicator" class="playback-indicator">
-        <svg id="indicatorPlay" viewBox="0 0 24 24"><use href="#ico-play" /></svg>
-        <svg id="indicatorPause" viewBox="0 0 24 24"><use href="#ico-pause" /></svg>
+        <svg id="indicatorPlay" viewBox="0 0 100 100"><use href="#ico-play-rapt" /></svg>
+        <svg id="indicatorPause" viewBox="0 0 100 100"><use href="#ico-pause-rapt" /></svg>
     </div>
 
     <div id="customSubContainer" class="draggable-sub"></div>
@@ -1641,7 +1665,7 @@
             </div>
 
             <div id="contentInfo" class="tab-content active">
-                <h2>Rapt 1.4.1</h2>
+                <h2>Rapt 1.4.2</h2>
                 <p class="github-link">
                     <a href="https://github.com/crustyoldhuman/Rapt"
                         target="_blank">Open source Github repo</a>
@@ -1720,7 +1744,7 @@
 
     <script>
         // === 1. CONSTANTS & ENVIRONMENT ===
-        const APP_VERSION = "1.4.1.0"; // Update this with each release
+        const APP_VERSION = "1.4.2.0"; // Update this with each release
         const URL_PARAMS = new URLSearchParams(window.location.search);
         const IS_WEBVIEW2 = !!(window.chrome && window.chrome.webview);
         const IS_NATIVE_APP = IS_WEBVIEW2 || URL_PARAMS.get('isNative') === '1';
@@ -1761,6 +1785,9 @@
             volWaves: document.getElementById('volWaves'),
             volMuteLine: document.getElementById('volMuteLine'),
             btnFit: document.getElementById('btnFit'),
+            fitLine: document.getElementById('fitLine'),
+            fitArrowBottom: document.getElementById('fitArrowBottom'),
+            fitArrowTop: document.getElementById('fitArrowTop'),
             btnCropToggle: document.getElementById('btnCropToggle'),
             cropPopupOverlay: document.getElementById('cropPopupOverlay'),
             closeCropPopupBtn: document.getElementById('closeCropPopupBtn'),
@@ -1843,7 +1870,7 @@
         const {
             mobileNotice, videoFileInput, btnLoadMedia, videoPlayer, audioPlayer,
             vidSizeGroup, sizeSlider, scaleValue, volumeSlider, volumeValue,
-            muteIcon, volWaves, volMuteLine, btnFit, btnCropToggle, cropPopupOverlay,
+            muteIcon, volWaves, volMuteLine, btnFit, fitLine, fitArrowBottom, fitArrowTop, btnCropToggle, cropPopupOverlay,
             closeCropPopupBtn, cropControls, cropTop, cropBottom, cropLeft, cropRight,
             linkTB, linkLR, controlBar, playOverlay, overlayContent, introText,
             audioTrackContainer, customAudioSelectWrapper, customAudioSelectValue, customAudioSelectOptions,
@@ -1987,19 +2014,38 @@
         updateLink.addEventListener('click', () => updatePopup.classList.remove('show'));
         checkForUpdates();
 
+        function getDefaultVideoScale() {
+            const dpr = window.devicePixelRatio || 1;
+            const targetScale = (window.innerHeight * 0.70 * dpr) / nativeHeight;
+            return Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
+        }
+
         function setFitToPage(enabled, applyScale = true) {
             isFitToPageEnabled = enabled;
             localStorage.setItem('rapt_fitToPage', enabled);
             if (enabled) {
-                btnFit.style.backgroundColor = '#23A620';
-                btnFit.style.color = '#142229';
-                if (applyScale && nativeWidth && nativeHeight) {
+                btnFit.title = 'Fit to Page';
+                fitLine.setAttribute('y1', '22');
+                fitLine.setAttribute('y2', '2');
+                fitArrowBottom.setAttribute('points', '5 15 12 22 19 15');
+                fitArrowTop.setAttribute('points', '5 9 12 2 19 9');
+                if (applyScale && videoPlayer.readyState > 0 && nativeWidth && nativeHeight) {
                     sizeSlider.value = currentFitScale;
                     updateVideoSize(currentFitScale);
+                    syncRangeFills();
                 }
             } else {
-                btnFit.style.backgroundColor = '#142229';
-                btnFit.style.color = '#23A620';
+                btnFit.title = 'Fit to Page: Off';
+                fitLine.setAttribute('y1', '16');
+                fitLine.setAttribute('y2', '8');
+                fitArrowBottom.setAttribute('points', '6 22 12 16 18 22');
+                fitArrowTop.setAttribute('points', '6 2 12 8 18 2');
+                if (applyScale && videoPlayer.readyState > 0 && nativeWidth && nativeHeight) {
+                    const defaultScale = getDefaultVideoScale();
+                    sizeSlider.value = defaultScale;
+                    updateVideoSize(defaultScale);
+                    syncRangeFills();
+                }
             }
         }
 
@@ -2153,7 +2199,7 @@
             playOverlay.classList.add('ready');
             overlayContent.innerHTML = `
                 <div id="overlayFilename" style="font-size: 14px; margin-bottom: 10px; font-weight: normal; opacity: 0.99; word-break: break-all; max-width: 95%;"></div>
-                <div class="play-icon">&#9658;</div>
+                <div class="play-icon"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#ico-play-rapt" /></svg></div>
                 <div class="play-text">Click or press space to play</div>
             `;
             document.getElementById('overlayFilename').textContent = fileName;
@@ -2807,8 +2853,7 @@
 
             updateSliderMax();
 
-            const dpr = window.devicePixelRatio || 1;
-            const targetScale = isFitToPageEnabled ? currentFitScale : (window.innerHeight * 0.70 * dpr) / nativeHeight;
+            const targetScale = isFitToPageEnabled ? currentFitScale : getDefaultVideoScale();
             const clampedScale = Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
 
             sizeSlider.value = clampedScale;
@@ -2948,7 +2993,6 @@
             ambientCanvas.classList.add('hidden');
             visualizerCanvas.classList.add('hidden');
             crtOverlay.classList.add('hidden');
-            videoPlayer.classList.remove('crt-active');
             currentVideoFile = null;
             filenameDisplay.classList.remove('ready');
             filenameDisplay.innerText = '';
@@ -3260,7 +3304,6 @@
 
         function manageCrtState() {
             const active = isCrtEnabled && !isAudioFile && videoPlayer._hasStartedPlaying && videoPlayer.readyState > 0;
-            videoPlayer.classList.toggle('crt-active', active);
             crtOverlay.classList.toggle('hidden', !active);
             if (active) updateVideoSize(sizeSlider.value);
         }
