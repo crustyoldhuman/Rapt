@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI;
@@ -12,6 +13,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Web.WebView2.Core;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Graphics;
 using Windows.UI;
 
 namespace Rapt
@@ -26,8 +28,8 @@ namespace Rapt
 		private readonly string _playlistFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "playlist.json");
 		private readonly SemaphoreSlim _playlistSaveLock = new(1, 1);
 
-		[System.Runtime.InteropServices.LibraryImport("user32.dll")]
-		private static partial int ShowCursor([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] bool bShow);
+		[GeneratedRegex(@"track=(\d+)")]
+		private static partial Regex TrackQueryRegex();
 
 		[System.Runtime.InteropServices.LibraryImport("user32.dll")]
 		[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
@@ -38,6 +40,20 @@ namespace Rapt
 
 		[System.Runtime.InteropServices.LibraryImport("dwmapi.dll")]
 		private static partial int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+		[System.Runtime.InteropServices.LibraryImport("kernel32.dll")]
+		private static partial uint SetThreadExecutionState(uint esFlags);
+
+		private const uint ES_CONTINUOUS = 0x80000000;
+		private const uint ES_SYSTEM_REQUIRED = 0x00000001;
+		private const uint ES_DISPLAY_REQUIRED = 0x00000002;
+		private bool _isWakeLockActive = false;
+
+		private bool _isMiniPlayer = false;
+		private PointInt32 _savedWindowPos;
+		private SizeInt32 _savedWindowSize;
+		private OverlappedPresenterState _savedPresenterState = OverlappedPresenterState.Restored;
+		private bool _hasSavedWindowBounds = false;
 
 		private bool _isNativeCursorHidden = false;
 		private DateTime _cursorHideTime = DateTime.MinValue;
@@ -89,6 +105,7 @@ namespace Rapt
 			DragOverlay.PointerPressed += WakeCursor;
 			DragOverlay.PointerWheelChanged += WakeCursor;
 			AppTitleBar.PointerEntered += WakeCursor;
+			this.Closed += (s, e) => SetWakeLock(false);
 
 			InitializeWebViewAsync();
 		}
@@ -328,12 +345,25 @@ namespace Rapt
 				coreWv.ContainsFullScreenElementChanged += (s, e) =>
 				{
 					bool isFullScreen = coreWv.ContainsFullScreenElement;
+					if (isFullScreen && _isMiniPlayer)
+					{
+						_isMiniPlayer = false;
+						SendBridgeMessage("{\"type\":\"PIP_STATE\",\"active\":false}");
+					}
+
 					this.AppWindow.SetPresenter(
 						isFullScreen
 							? AppWindowPresenterKind.FullScreen
 							: AppWindowPresenterKind.Default
 					);
 					AppTitleBar.Visibility = isFullScreen ? Visibility.Collapsed : Visibility.Visible;
+
+					if (!isFullScreen && _hasSavedWindowBounds && this.AppWindow.Presenter is OverlappedPresenter presenter)
+					{
+						presenter.IsAlwaysOnTop = false;
+						presenter.IsMaximizable = true;
+						RestoreSavedWindowBounds(presenter);
+					}
 				};
 
 				// Map the app's Assets folder to a virtual domain
@@ -370,7 +400,7 @@ namespace Rapt
 						{
 							if (uri.Query.Contains("track=") && uri.Host.Equals("audio.rapt", StringComparison.OrdinalIgnoreCase))
 							{
-								string trackStr = System.Text.RegularExpressions.Regex.Match(uri.Query, @"track=(\d+)").Groups[1].Value;
+								string trackStr = TrackQueryRegex().Match(uri.Query).Groups[1].Value;
 								if (int.TryParse(trackStr, out int trackIdx))
 								{
 									string tempDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Rapt", "AudioCache");
@@ -572,8 +602,58 @@ namespace Rapt
 							return;
 						}
 
+						if (msg != null && msg.Contains("\"type\":\"WAKE_LOCK\""))
+						{
+							bool active = (bool?)JsonNode.Parse(msg)?["active"] ?? false;
+							SetWakeLock(active);
+							return;
+						}
+
+						if (msg != null && msg.Contains("\"type\":\"SET_PIP\""))
+						{
+							var node = JsonNode.Parse(msg);
+							bool active = (bool?)node?["active"] ?? false;
+							double aspectRatio = (double?)node?["aspectRatio"] ?? (16.0 / 9.0);
+							SetMiniPlayer(active, aspectRatio);
+							return;
+						}
+
+						if (msg != null && msg.Contains("\"type\":\"SAVE_SCREENSHOT\""))
+						{
+							var node = JsonNode.Parse(msg);
+							string? base64Data = (string?)node?["imageData"];
+							string suggestedName = (string?)node?["fileName"] ?? "Rapt_Screenshot";
+
+							if (!string.IsNullOrEmpty(base64Data))
+							{
+								byte[] imageBytes = Convert.FromBase64String(base64Data);
+
+								foreach (char c in Path.GetInvalidFileNameChars())
+								{
+									suggestedName = suggestedName.Replace(c, '_');
+								}
+
+								var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+								var savePicker = new Windows.Storage.Pickers.FileSavePicker();
+								WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hwnd);
+								savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary;
+								savePicker.FileTypeChoices.Add("PNG Image", [".png"]);
+								savePicker.SuggestedFileName = suggestedName;
+
+								var file = await savePicker.PickSaveFileAsync();
+								if (file != null)
+								{
+									await Windows.Storage.FileIO.WriteBytesAsync(file, imageBytes);
+									SendBridgeMessage("{\"type\":\"SCREENSHOT_SAVED\"}");
+								}
+							}
+							return;
+						}
+
 						if (msg != null && msg.Contains("\"type\":\"BRIDGE_READY\""))
 						{
+							SetWakeLock(false);
+							if (_isMiniPlayer) SetMiniPlayer(false);
 							_isPageReady = true;
 
 							if (File.Exists(_playlistFile))
@@ -873,6 +953,86 @@ namespace Rapt
 		private void SendBridgeMessage(string json)
 		{
 			PlayerWebView.CoreWebView2.PostWebMessageAsString(json);
+		}
+
+		private void SetWakeLock(bool active)
+		{
+			if (_isWakeLockActive == active) return;
+			uint flags = active ? (ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED) : ES_CONTINUOUS;
+			if (SetThreadExecutionState(flags) != 0)
+			{
+				_isWakeLockActive = active;
+			}
+		}
+
+		private void RestoreSavedWindowBounds(OverlappedPresenter presenter)
+		{
+			if (!_hasSavedWindowBounds) return;
+			this.AppWindow.MoveAndResize(new RectInt32(_savedWindowPos.X, _savedWindowPos.Y, _savedWindowSize.Width, _savedWindowSize.Height));
+			if (_savedPresenterState == OverlappedPresenterState.Maximized)
+			{
+				presenter.Maximize();
+			}
+			_hasSavedWindowBounds = false;
+		}
+
+		private void SetMiniPlayer(bool active, double aspectRatio = 16.0 / 9.0)
+		{
+			if (_isMiniPlayer == active) return;
+
+			if (this.AppWindow.Presenter is not OverlappedPresenter presenter)
+			{
+				this.AppWindow.SetPresenter(AppWindowPresenterKind.Default);
+				AppTitleBar.Visibility = Visibility.Visible;
+				if (this.AppWindow.Presenter is not OverlappedPresenter fallbackPresenter) return;
+				presenter = fallbackPresenter;
+			}
+
+			if (active)
+			{
+				_savedPresenterState = presenter.State;
+				if (presenter.State != OverlappedPresenterState.Restored)
+				{
+					presenter.Restore();
+				}
+				_savedWindowPos = this.AppWindow.Position;
+				_savedWindowSize = this.AppWindow.Size;
+				_hasSavedWindowBounds = true;
+
+				double scale = PlayerWebView.XamlRoot?.RasterizationScale ?? 1.0;
+				double clampedAspect = Math.Clamp(double.IsFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : (16.0 / 9.0), 0.5, 3.0);
+				int titleBarPx = (int)Math.Round(32 * scale);
+				int miniW = (int)Math.Round(480 * scale);
+				int miniH = (int)Math.Round(miniW / clampedAspect) + titleBarPx;
+				int maxH = (int)Math.Round(520 * scale);
+				if (miniH > maxH)
+				{
+					miniH = maxH;
+					miniW = Math.Max((int)Math.Round(320 * scale), (int)Math.Round((miniH - titleBarPx) * clampedAspect));
+				}
+
+				var workArea = DisplayArea.GetFromWindowId(this.AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
+				int margin = (int)Math.Round(20 * scale);
+				int targetX = workArea.X + workArea.Width - miniW - margin;
+				int targetY = workArea.Y + workArea.Height - miniH - margin;
+
+				presenter.IsMaximizable = false;
+				presenter.IsAlwaysOnTop = true;
+				this.AppWindow.MoveAndResize(new RectInt32(targetX, targetY, miniW, miniH));
+				_isMiniPlayer = true;
+			}
+			else
+			{
+				presenter.IsAlwaysOnTop = false;
+				presenter.IsMaximizable = true;
+				RestoreSavedWindowBounds(presenter);
+				_isMiniPlayer = false;
+			}
+
+			if (PlayerWebView.CoreWebView2 != null)
+			{
+				SendBridgeMessage($"{{\"type\":\"PIP_STATE\",\"active\":{(_isMiniPlayer ? "true" : "false")}}}");
+			}
 		}
 
 		private void WakeCursor(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)

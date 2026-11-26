@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapt Player 1.4.2</title>
+    <title>Rapt Player 1.5.0</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='4' fill='%23142229' stroke='black' stroke-width='1'/%3E%3Cpolygon points='9,7 18,12 9,17' fill='%2323A620'/%3E%3C/svg%3E"
         type="image/svg+xml">
@@ -208,7 +208,7 @@
         }
 
         .size-slider-row input[type="range"] {
-            width: 80px;
+            width: 65px;
         }
 
         .glow-control-col {
@@ -245,20 +245,18 @@
         }
 
         .volume-icon-wrap {
-            position: relative;
             display: inline-flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            width: 26px;
+            transform: translateY(-4px);
         }
 
         .volume-label {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            margin-bottom: 1px;
-            font-size: 11px;
+            font-size: 9.5px;
             line-height: 1;
+            margin-bottom: -1px;
             white-space: nowrap;
             pointer-events: none;
         }
@@ -271,7 +269,7 @@
             align-items: center;
             justify-content: center;
             width: 24px;
-            height: 24px;
+            height: 20px;
         }
 
         #volMuteLine {
@@ -609,6 +607,77 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .pip-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--panel-bg);
+            color: var(--accent);
+            border: 1px solid var(--border-dark);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+            transition: opacity 0.4s ease, visibility 0.4s ease, filter 0.2s, background-color 0.2s, color 0.2s;
+        }
+
+        .pip-btn.available {
+            display: inline-flex;
+        }
+
+        .pip-btn.hidden {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        .pip-btn.active {
+            background-color: var(--accent);
+            color: var(--surface);
+        }
+
+        body.mini-player .controls,
+        body.mini-player #playlistPanel,
+        body.mini-player #playlistHandle,
+        body.mini-player #infoLink,
+        body.mini-player #filenameDisplay,
+        body.mini-player #btnLoop,
+        body.mini-player #btnFit {
+            display: none !important;
+        }
+
+        body.mini-player .pip-btn {
+            top: 10px;
+            right: 10px;
+        }
+
+        body.mini-player .bottom-controls {
+            bottom: 10px;
+            width: calc(100% - 20px);
+            max-width: none;
+            padding: 8px 12px;
+            gap: 8px;
+            box-sizing: border-box;
+        }
+
+        body.mini-player #timeDisplay {
+            min-width: 74px;
+            font-size: 12px;
+        }
+
+        body.mini-player .volume-control {
+            margin-left: 2px;
+        }
+
+        body.mini-player #volumeSlider {
+            width: 48px;
         }
 
         /* --- MEDIA, CRT, GLOW & VISUALIZER --- */
@@ -1354,6 +1423,58 @@
             text-align: right;
         }
 
+        .context-menu {
+            position: fixed;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 170px;
+            padding: 6px;
+            background-color: var(--panel-bg-solid);
+            border: 1px solid var(--border-dark);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 2500;
+            user-select: none;
+        }
+
+        .context-menu.open {
+            display: flex;
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 6px 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .context-menu-speed {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 6px 10px;
+            background-color: var(--surface);
+            border: 1px solid var(--border-dark);
+            border-radius: 5px;
+            font-size: 13.33px;
+            color: var(--accent);
+        }
+
+        .context-menu-speed label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .context-menu-speed input[type="range"] {
+            width: 100%;
+        }
+
         .mobile-notice {
             position: fixed;
             inset: 0;
@@ -1417,6 +1538,20 @@
         <symbol id="ico-pause-rapt" viewBox="0 0 100 100">
             <rect x="18" y="12" width="24" height="76" rx="8" fill="url(#raptPlayGrad)" stroke="#000000" stroke-width="3.8" />
             <rect x="58" y="12" width="24" height="76" rx="8" fill="url(#raptPlayGrad)" stroke="#000000" stroke-width="3.8" />
+        </symbol>
+        <symbol id="ico-pip-enter" viewBox="0 0 24 24">
+            <rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2" />
+            <rect x="12" y="11" width="8" height="6" rx="1" fill="currentColor" />
+            <path d="M6 8l4 4m0 0V9m0 3H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+        <symbol id="ico-pip-exit" viewBox="0 0 24 24">
+            <rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2" />
+            <rect x="12" y="11" width="8" height="6" rx="1" fill="currentColor" />
+            <path d="M10 12L6 8m0 0v3m0-3h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+        <symbol id="ico-screenshot" viewBox="0 0 24 24">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
         </symbol>
     </svg>
 
@@ -1506,7 +1641,7 @@
                     </div>
                 </div>
 
-                <button id="btnCropToggle" disabled>Crop edges</button>
+                <button id="btnCropToggle" disabled>Crop Sides</button>
             </div>
         </div>
     </div>
@@ -1516,6 +1651,11 @@
             <div class="play-text" id="introText">Double-click anywhere or drag and drop an .mp4 file</div>
         </div>
     </div>
+
+    <button id="btnPip" class="pip-btn hidden" title="Always on Top / Picture-in-Picture (I)">
+        <svg id="iconPipEnter" width="18" height="18" viewBox="0 0 24 24"><use href="#ico-pip-enter" /></svg>
+        <svg id="iconPipExit" width="18" height="18" viewBox="0 0 24 24" style="display: none;"><use href="#ico-pip-exit" /></svg>
+    </button>
 
     <div id="subToast" class="toast hidden">Subtitles loaded</div>
     <div id="audioToast" class="toast hidden">Additional audio tracks detected</div>
@@ -1665,7 +1805,7 @@
             </div>
 
             <div id="contentInfo" class="tab-content active">
-                <h2>Rapt 1.4.2</h2>
+                <h2>Rapt 1.5.0</h2>
                 <p class="github-link">
                     <a href="https://github.com/crustyoldhuman/Rapt"
                         target="_blank">Open source Github repo</a>
@@ -1723,10 +1863,25 @@
 
                     <span>N / P</span>
                     <div>Next / Prev Track</div>
-                    <span></span>
-                    <div></div>
+                    <span>I</span>
+                    <div>Always on Top / PiP</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="contextMenu" class="context-menu" role="menu">
+        <button id="ctxScreenshot" class="context-menu-item" role="menuitem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><use href="#ico-screenshot" /></svg>
+            <span>Take Screenshot</span>
+        </button>
+        <div id="ctxSpeedGroup" class="context-menu-speed" role="menuitem">
+            <label id="ctxSpeedLabel" for="ctxSpeedSlider" title="Double-click to reset to 1.0x">
+                <span>Speed:</span>
+                <span id="ctxSpeedValue">1.0x</span>
+            </label>
+            <input type="range" id="ctxSpeedSlider" min="0.1" max="3" step="0.1" value="1">
         </div>
     </div>
 
@@ -1744,7 +1899,7 @@
 
     <script>
         // === 1. CONSTANTS & ENVIRONMENT ===
-        const APP_VERSION = "1.4.2.0"; // Update this with each release
+        const APP_VERSION = "1.5.0.0"; // Update this with each release
         const URL_PARAMS = new URLSearchParams(window.location.search);
         const IS_WEBVIEW2 = !!(window.chrome && window.chrome.webview);
         const IS_NATIVE_APP = IS_WEBVIEW2 || URL_PARAMS.get('isNative') === '1';
@@ -1848,6 +2003,9 @@
             seekSlider: document.getElementById('seekSlider'),
             timeDisplay: document.getElementById('timeDisplay'),
             btnFullscreen: document.getElementById('btnFullscreen'),
+            btnPip: document.getElementById('btnPip'),
+            iconPipEnter: document.getElementById('iconPipEnter'),
+            iconPipExit: document.getElementById('iconPipExit'),
             crtToggle: document.getElementById('crtToggle'),
             crtOverlay: document.getElementById('crtOverlay'),
             ambientToggle: document.getElementById('ambientToggle'),
@@ -1864,7 +2022,13 @@
             tabInfo: document.getElementById('tabInfo'),
             tabControls: document.getElementById('tabControls'),
             contentInfo: document.getElementById('contentInfo'),
-            contentControls: document.getElementById('contentControls')
+            contentControls: document.getElementById('contentControls'),
+            contextMenu: document.getElementById('contextMenu'),
+            ctxScreenshot: document.getElementById('ctxScreenshot'),
+            ctxSpeedGroup: document.getElementById('ctxSpeedGroup'),
+            ctxSpeedLabel: document.getElementById('ctxSpeedLabel'),
+            ctxSpeedValue: document.getElementById('ctxSpeedValue'),
+            ctxSpeedSlider: document.getElementById('ctxSpeedSlider')
         };
 
         const {
@@ -1882,10 +2046,11 @@
             playlistList, btnPlaylistAdd, playlistAddInput, btnPlaylistClear,
             btnPlaylistSave, btnPlaylistLoad, playlistLoadInput, playlistNativeControls,
             bottomControlBar, btnPrev, btnPlayPause, iconPlay, iconPause, btnNext, btnLoop,
-            seekSlider, timeDisplay, btnFullscreen, crtToggle, crtOverlay, ambientToggle,
+            seekSlider, timeDisplay, btnFullscreen, btnPip, iconPipEnter, iconPipExit, crtToggle, crtOverlay, ambientToggle,
             glowIntensityGroup, glowSlider, ambientCanvas, visualizerCanvas,
             playbackIndicator, indicatorPlay, indicatorPause,
-            infoLink, infoPopupOverlay, closePopupBtn, tabInfo, tabControls, contentInfo, contentControls
+            infoLink, infoPopupOverlay, closePopupBtn, tabInfo, tabControls, contentInfo, contentControls,
+            contextMenu, ctxScreenshot, ctxSpeedGroup, ctxSpeedLabel, ctxSpeedValue, ctxSpeedSlider
         } = DOM;
 
         if (isMobile) mobileNotice.classList.add('visible');
@@ -1930,7 +2095,13 @@
         let loopMode = 0; // 0: Off, 1: Loop Video, 2: Loop Playlist
         let isMuted = false;
         let preMuteVolume = 1;
+        let currentPlaybackRate = 1.0;
         let wasPlayingBeforeDrag = false;
+        let wakeLockSentinel = null;
+        let isWakeLockDesired = false;
+        let isPipActive = false;
+        let prePipFitEnabled = false;
+        let prePipScale = '1.00';
 
         // Subtitles
         let currentSubSelectValue = 'unload';
@@ -1957,6 +2128,11 @@
         let isLinkedTB = true;
         let isLinkedLR = true;
         let isFitToPageEnabled = false;
+        let cropHoldTimer = null;
+        let cropHoldTriggered = false;
+        let cropPointerActive = false;
+        const cropDetectCanvas = document.createElement('canvas');
+        const cropDetectCtx = cropDetectCanvas.getContext('2d', { alpha: false, willReadFrequently: true });
 
         // Playlist
         let playlistFiles = [];
@@ -1973,7 +2149,9 @@
         let hideTimeout;
         let isCursorHidden = false;
         let indicatorTimeout;
+        let toastTimeout;
         let clickTimer = null;
+        let suppressNextClick = false;
         let lastMouseX = -1;
         let lastMouseY = -1;
         let crustyCanReappear = false;
@@ -2020,9 +2198,9 @@
             return Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
         }
 
-        function setFitToPage(enabled, applyScale = true) {
+        function setFitToPage(enabled, applyScale = true, persist = true) {
             isFitToPageEnabled = enabled;
-            localStorage.setItem('rapt_fitToPage', enabled);
+            if (persist) localStorage.setItem('rapt_fitToPage', enabled);
             if (enabled) {
                 btnFit.title = 'Fit to Player: Off';
                 fitLine.setAttribute('y1', '16');
@@ -2076,10 +2254,187 @@
             audioPlayer.currentTime = time;
         }
 
+        function applyPlaybackRate(rate) {
+            const clamped = Math.max(0.1, Math.min(3, Math.round(parseFloat(rate) * 10) / 10));
+            if (isNaN(clamped)) return;
+            currentPlaybackRate = clamped;
+            videoPlayer.defaultPlaybackRate = clamped;
+            audioPlayer.defaultPlaybackRate = clamped;
+            videoPlayer.playbackRate = clamped;
+            audioPlayer.playbackRate = clamped;
+            if (ctxSpeedSlider) ctxSpeedSlider.value = clamped;
+            if (ctxSpeedValue) ctxSpeedValue.innerText = clamped.toFixed(1) + 'x';
+            syncRangeFills();
+            updateMediaSessionPosition();
+        }
+
         function setPlayPauseIcon(isPlaying) {
             iconPlay.style.display = isPlaying ? 'none' : 'block';
             iconPause.style.display = isPlaying ? 'block' : 'none';
         }
+
+        async function setWakeLock(active) {
+            isWakeLockDesired = active;
+            if (postToHost({ type: 'WAKE_LOCK', active })) return;
+            if (!('wakeLock' in navigator)) return;
+
+            if (active) {
+                if (wakeLockSentinel || document.visibilityState !== 'visible') return;
+                try {
+                    const sentinel = await navigator.wakeLock.request('screen');
+                    if (!isWakeLockDesired) {
+                        sentinel.release().catch(() => { });
+                        return;
+                    }
+                    wakeLockSentinel = sentinel;
+                    sentinel.addEventListener('release', () => {
+                        if (wakeLockSentinel === sentinel) wakeLockSentinel = null;
+                    });
+                } catch { }
+            } else if (wakeLockSentinel) {
+                const sentinel = wakeLockSentinel;
+                wakeLockSentinel = null;
+                sentinel.release().catch(() => { });
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && isWakeLockDesired) {
+                setWakeLock(true);
+            }
+        });
+
+        function setMediaActionHandler(action, handler) {
+            if (!('mediaSession' in navigator)) return;
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch { }
+        }
+
+        function updateMediaSessionMetadata(title) {
+            if (!('mediaSession' in navigator)) return;
+            if (!title) {
+                navigator.mediaSession.metadata = null;
+                return;
+            }
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title,
+                artist: 'Rapt'
+            });
+        }
+
+        function updateMediaSessionPosition() {
+            if (!('mediaSession' in navigator) || !('setPositionState' in navigator.mediaSession)) return;
+            if (videoPlayer.readyState === 0 || !isFinite(videoPlayer.duration) || videoPlayer.duration <= 0) {
+                try { navigator.mediaSession.setPositionState(); } catch { }
+                return;
+            }
+            const duration = videoPlayer.duration;
+            const position = Math.max(0, Math.min(videoPlayer.currentTime || 0, duration));
+            try {
+                navigator.mediaSession.setPositionState({
+                    duration,
+                    playbackRate: videoPlayer.playbackRate || 1,
+                    position
+                });
+            } catch { }
+        }
+
+        function updateMediaSessionTrackHandlers() {
+            const hasPlaylistNav = playlistFiles.length > 1;
+            setMediaActionHandler('previoustrack', hasPlaylistNav ? playPrev : null);
+            setMediaActionHandler('nexttrack', hasPlaylistNav ? playNext : null);
+        }
+
+        function isPipSupported() {
+            return IS_WEBVIEW2 || !!document.pictureInPictureEnabled;
+        }
+
+        function updatePipAvailability() {
+            const canPip = isPipSupported() && videoPlayer.readyState > 0 && !isAudioFile;
+            btnPip.classList.toggle('available', canPip);
+            if (!canPip) btnPip.classList.add('hidden');
+        }
+
+        function setPipUI(active) {
+            isPipActive = active;
+            btnPip.classList.toggle('active', active);
+            iconPipEnter.style.display = active ? 'none' : 'block';
+            iconPipExit.style.display = active ? 'block' : 'none';
+            btnPip.title = active
+                ? (IS_WEBVIEW2 ? 'Exit Always on Top (I)' : 'Exit Picture-in-Picture (I)')
+                : (IS_WEBVIEW2 ? 'Always on Top Mini-Player (I)' : 'Picture-in-Picture (I)');
+            manageAmbientState();
+        }
+
+        function applyNativePipState(active) {
+            if (isPipActive === active) return;
+            setPipUI(active);
+            document.body.classList.toggle('mini-player', active);
+
+            if (active) {
+                cropPopupOverlay.classList.remove('visible');
+                infoPopupOverlay.classList.remove('visible');
+                playlistPanel.classList.remove('open');
+                prePipFitEnabled = isFitToPageEnabled;
+                prePipScale = sizeSlider.value;
+                setFitToPage(true, true, false);
+            } else {
+                setFitToPage(prePipFitEnabled, false, false);
+                if (!prePipFitEnabled) {
+                    setTimeout(() => {
+                        if (!isPipActive && videoPlayer.readyState > 0 && nativeWidth && nativeHeight) {
+                            const clamped = Math.max(parseFloat(sizeSlider.min), Math.min(parseFloat(sizeSlider.max), parseFloat(prePipScale))).toFixed(2);
+                            sizeSlider.value = clamped;
+                            updateVideoSize(clamped);
+                            syncRangeFills();
+                        }
+                    }, 80);
+                }
+            }
+        }
+
+        async function exitPipIfActive() {
+            if (!isPipActive) return;
+            if (IS_WEBVIEW2) {
+                postToHost({ type: 'SET_PIP', active: false });
+            } else if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture().catch(() => { });
+            }
+        }
+
+        async function togglePip() {
+            if (!isPipSupported() || videoPlayer.readyState === 0 || isAudioFile) return;
+
+            if (IS_WEBVIEW2) {
+                const nextActive = !isPipActive;
+                if (nextActive && document.fullscreenElement) {
+                    await document.exitFullscreen().catch(() => { });
+                }
+                const aspectRatio = (nativeWidth > 0 && nativeHeight > 0) ? (nativeWidth / nativeHeight) : (16 / 9);
+                postToHost({ type: 'SET_PIP', active: nextActive, aspectRatio });
+                return;
+            }
+
+            try {
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                } else {
+                    if (document.fullscreenElement) {
+                        await document.exitFullscreen().catch(() => { });
+                    }
+                    await videoPlayer.requestPictureInPicture();
+                }
+            } catch { }
+        }
+
+        btnPip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePip();
+        });
+
+        videoPlayer.addEventListener('enterpictureinpicture', () => setPipUI(true));
+        videoPlayer.addEventListener('leavepictureinpicture', () => setPipUI(false));
 
         function setCursorHidden(hidden) {
             if (isCursorHidden === hidden) return;
@@ -2195,6 +2550,17 @@
             overlayContent.innerHTML = `<div class="spinner"></div><div class="play-text">${text}</div>`;
         }
 
+        function showToast(message, durationMs = 2500) {
+            clearTimeout(toastTimeout);
+            subToast.innerText = message;
+            subToast.classList.remove('hidden');
+            toastTimeout = setTimeout(() => subToast.classList.add('hidden'), durationMs);
+        }
+
+        function closeContextMenu() {
+            contextMenu.classList.remove('open');
+        }
+
         function showReadyOverlay(fileName) {
             playOverlay.classList.add('ready');
             overlayContent.innerHTML = `
@@ -2253,10 +2619,259 @@
             customSubContainer.innerHTML = html;
         }
 
-        btnCropToggle.addEventListener('click', () => {
-            clearTimeout(hideTimeout);
-            cropPopupOverlay.classList.add('visible');
+        const CROP_HOLD_MS = 400;
+        const CROP_LUMA_THRESH = 22;
+        const CROP_CHANNEL_THRESH = 30;
+        const CROP_AVG_LUMA_THRESH = 18;
+        const CROP_MAX_NON_BLACK_RATIO = 0.02;
+        const CROP_MAX_EDGE_FRACTION = 0.35;
+
+        function isPixelNonBlack(r, g, b) {
+            return r > CROP_CHANNEL_THRESH ||
+                g > CROP_CHANNEL_THRESH ||
+                b > CROP_CHANNEL_THRESH ||
+                (0.2126 * r + 0.7152 * g + 0.0722 * b) > CROP_LUMA_THRESH;
+        }
+
+        function isRowBlack(data, width, y, xStart, xEnd) {
+            const count = xEnd - xStart;
+            if (count <= 0) return false;
+            let nonBlack = 0;
+            let lumaSum = 0;
+            const rowOffset = y * width * 4;
+            for (let x = xStart; x < xEnd; x++) {
+                const i = rowOffset + x * 4;
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                lumaSum += luma;
+                if (r > CROP_CHANNEL_THRESH || g > CROP_CHANNEL_THRESH || b > CROP_CHANNEL_THRESH || luma > CROP_LUMA_THRESH) {
+                    nonBlack++;
+                }
+            }
+            return (nonBlack / count) <= CROP_MAX_NON_BLACK_RATIO && (lumaSum / count) <= CROP_AVG_LUMA_THRESH;
+        }
+
+        function isColBlack(data, width, x, yStart, yEnd) {
+            const count = yEnd - yStart;
+            if (count <= 0) return false;
+            let nonBlack = 0;
+            let lumaSum = 0;
+            for (let y = yStart; y < yEnd; y++) {
+                const i = (y * width + x) * 4;
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                lumaSum += luma;
+                if (r > CROP_CHANNEL_THRESH || g > CROP_CHANNEL_THRESH || b > CROP_CHANNEL_THRESH || luma > CROP_LUMA_THRESH) {
+                    nonBlack++;
+                }
+            }
+            return (nonBlack / count) <= CROP_MAX_NON_BLACK_RATIO && (lumaSum / count) <= CROP_AVG_LUMA_THRESH;
+        }
+
+        function detectBlackBorders() {
+            if (isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight) return null;
+
+            const maxDim = 480;
+            const scale = Math.min(1, maxDim / Math.max(nativeWidth, nativeHeight));
+            const sw = Math.max(1, Math.round(nativeWidth * scale));
+            const sh = Math.max(1, Math.round(nativeHeight * scale));
+
+            cropDetectCanvas.width = sw;
+            cropDetectCanvas.height = sh;
+
+            let data;
+            try {
+                cropDetectCtx.drawImage(videoPlayer, 0, 0, nativeWidth, nativeHeight, 0, 0, sw, sh);
+                data = cropDetectCtx.getImageData(0, 0, sw, sh).data;
+            } catch {
+                return null;
+            }
+
+            // Abort on solid-black or fade-out frames
+            let frameNonBlack = 0;
+            const totalPixels = sw * sh;
+            for (let i = 0; i < data.length; i += 4) {
+                if (isPixelNonBlack(data[i], data[i + 1], data[i + 2])) frameNonBlack++;
+            }
+            if ((frameNonBlack / totalPixels) < 0.02) return null;
+
+            const maxCoarseY = Math.floor(sh * CROP_MAX_EDGE_FRACTION);
+            const maxCoarseX = Math.floor(sw * CROP_MAX_EDGE_FRACTION);
+
+            let coarseTop = 0;
+            while (coarseTop < maxCoarseY && isRowBlack(data, sw, coarseTop, 0, sw)) coarseTop++;
+
+            let coarseBottom = 0;
+            while (coarseBottom < maxCoarseY && isRowBlack(data, sw, sh - 1 - coarseBottom, 0, sw)) coarseBottom++;
+
+            const yEndCoarse = Math.max(coarseTop + 1, sh - coarseBottom);
+
+            let coarseLeft = 0;
+            while (coarseLeft < maxCoarseX && isColBlack(data, sw, coarseLeft, coarseTop, yEndCoarse)) coarseLeft++;
+
+            let coarseRight = 0;
+            while (coarseRight < maxCoarseX && isColBlack(data, sw, sw - 1 - coarseRight, coarseTop, yEndCoarse)) coarseRight++;
+
+            // Pass 2: refine each edge at 1:1 native pixel resolution
+            const pad = Math.ceil(3 / scale) + 6;
+            const maxNativeY = Math.floor(nativeHeight * CROP_MAX_EDGE_FRACTION);
+            const maxNativeX = Math.floor(nativeWidth * CROP_MAX_EDGE_FRACTION);
+
+            const approxTop = Math.round(coarseTop / scale);
+            const approxBottom = Math.round(coarseBottom / scale);
+            const approxLeft = Math.round(coarseLeft / scale);
+            const approxRight = Math.round(coarseRight / scale);
+
+            let exactTop = approxTop;
+            {
+                const winStart = Math.max(0, approxTop - pad);
+                const winEnd = Math.min(maxNativeY, approxTop + pad);
+                const winH = winEnd - winStart;
+                const sampleW = Math.min(nativeWidth, maxDim);
+                if (winH > 0) {
+                    cropDetectCanvas.width = sampleW;
+                    cropDetectCanvas.height = winH;
+                    cropDetectCtx.drawImage(videoPlayer, 0, winStart, nativeWidth, winH, 0, 0, sampleW, winH);
+                    const slice = cropDetectCtx.getImageData(0, 0, sampleW, winH).data;
+                    let blackRows = 0;
+                    while (blackRows < winH && isRowBlack(slice, sampleW, blackRows, 0, sampleW)) blackRows++;
+                    exactTop = blackRows < winH ? winStart + blackRows : approxTop;
+                }
+            }
+
+            let exactBottom = approxBottom;
+            {
+                const winStart = Math.max(exactTop, nativeHeight - approxBottom - pad);
+                const winEnd = Math.min(nativeHeight, nativeHeight - approxBottom + pad);
+                const winH = winEnd - winStart;
+                const sampleW = Math.min(nativeWidth, maxDim);
+                if (winH > 0) {
+                    cropDetectCanvas.width = sampleW;
+                    cropDetectCanvas.height = winH;
+                    cropDetectCtx.drawImage(videoPlayer, 0, winStart, nativeWidth, winH, 0, 0, sampleW, winH);
+                    const slice = cropDetectCtx.getImageData(0, 0, sampleW, winH).data;
+                    let blackRows = 0;
+                    while (blackRows < winH && isRowBlack(slice, sampleW, winH - 1 - blackRows, 0, sampleW)) blackRows++;
+                    exactBottom = blackRows < winH ? (nativeHeight - winEnd) + blackRows : approxBottom;
+                }
+            }
+
+            const contentH = Math.max(1, nativeHeight - exactTop - exactBottom);
+            const sampleH = Math.min(contentH, maxDim);
+
+            let exactLeft = approxLeft;
+            {
+                const winStart = Math.max(0, approxLeft - pad);
+                const winEnd = Math.min(maxNativeX, approxLeft + pad);
+                const winW = winEnd - winStart;
+                if (winW > 0) {
+                    cropDetectCanvas.width = winW;
+                    cropDetectCanvas.height = sampleH;
+                    cropDetectCtx.drawImage(videoPlayer, winStart, exactTop, winW, contentH, 0, 0, winW, sampleH);
+                    const slice = cropDetectCtx.getImageData(0, 0, winW, sampleH).data;
+                    let blackCols = 0;
+                    while (blackCols < winW && isColBlack(slice, winW, blackCols, 0, sampleH)) blackCols++;
+                    exactLeft = blackCols < winW ? winStart + blackCols : approxLeft;
+                }
+            }
+
+            let exactRight = approxRight;
+            {
+                const winStart = Math.max(exactLeft, nativeWidth - approxRight - pad);
+                const winEnd = Math.min(nativeWidth, nativeWidth - approxRight + pad);
+                const winW = winEnd - winStart;
+                if (winW > 0) {
+                    cropDetectCanvas.width = winW;
+                    cropDetectCanvas.height = sampleH;
+                    cropDetectCtx.drawImage(videoPlayer, winStart, exactTop, winW, contentH, 0, 0, winW, sampleH);
+                    const slice = cropDetectCtx.getImageData(0, 0, winW, sampleH).data;
+                    let blackCols = 0;
+                    while (blackCols < winW && isColBlack(slice, winW, winW - 1 - blackCols, 0, sampleH)) blackCols++;
+                    exactRight = blackCols < winW ? (nativeWidth - winEnd) + blackCols : approxRight;
+                }
+            }
+
+            if (exactTop + exactBottom >= nativeHeight * 0.75 || exactLeft + exactRight >= nativeWidth * 0.75) {
+                return null;
+            }
+
+            return {
+                top: Math.max(0, Math.round(exactTop)),
+                bottom: Math.max(0, Math.round(exactBottom)),
+                left: Math.max(0, Math.round(exactLeft)),
+                right: Math.max(0, Math.round(exactRight))
+            };
+        }
+
+        function handleAutoCropClick() {
+            const hasCrop = (parseFloat(cropTop.value) || 0) > 0 ||
+                (parseFloat(cropBottom.value) || 0) > 0 ||
+                (parseFloat(cropLeft.value) || 0) > 0 ||
+                (parseFloat(cropRight.value) || 0) > 0;
+
+            if (hasCrop) {
+                cropTop.value = 0;
+                cropBottom.value = 0;
+                cropLeft.value = 0;
+                cropRight.value = 0;
+                isLinkedTB = true;
+                linkTB.classList.add('active');
+                isLinkedLR = true;
+                linkLR.classList.add('active');
+                applyVideoCrop();
+                return;
+            }
+
+            const result = detectBlackBorders();
+            if (!result) return;
+            if (result.top === 0 && result.bottom === 0 && result.left === 0 && result.right === 0) return;
+
+            cropTop.value = result.top;
+            cropBottom.value = result.bottom;
+            cropLeft.value = result.left;
+            cropRight.value = result.right;
+
+            isLinkedTB = result.top === result.bottom;
+            linkTB.classList.toggle('active', isLinkedTB);
+            isLinkedLR = result.left === result.right;
+            linkLR.classList.toggle('active', isLinkedLR);
+
+            applyVideoCrop();
+        }
+
+        btnCropToggle.addEventListener('pointerdown', (e) => {
+            if ((e.pointerType === 'mouse' && e.button !== 0) || btnCropToggle.disabled) return;
+            cropPointerActive = true;
+            cropHoldTriggered = false;
+            clearTimeout(cropHoldTimer);
+            cropHoldTimer = setTimeout(() => {
+                cropHoldTriggered = true;
+                cropPointerActive = false;
+                clearTimeout(hideTimeout);
+                cropPopupOverlay.classList.add('visible');
+                btnCropToggle.blur();
+            }, CROP_HOLD_MS);
         });
+
+        btnCropToggle.addEventListener('pointerup', () => {
+            if (!cropPointerActive) return;
+            clearTimeout(cropHoldTimer);
+            cropPointerActive = false;
+            if (!cropHoldTriggered) handleAutoCropClick();
+            btnCropToggle.blur();
+        });
+
+        btnCropToggle.addEventListener('pointerleave', () => {
+            clearTimeout(cropHoldTimer);
+            cropPointerActive = false;
+        });
+
+        btnCropToggle.addEventListener('pointercancel', () => {
+            clearTimeout(cropHoldTimer);
+            cropPointerActive = false;
+        });
+
+        btnCropToggle.addEventListener('contextmenu', (e) => e.preventDefault());
 
         closeCropPopupBtn.addEventListener('click', () => {
             cropPopupOverlay.classList.remove('visible');
@@ -2294,8 +2909,10 @@
             const b = cropB / nativeHeight * 100;
             const l = cropL / nativeWidth * 100;
 
+            const hasCrop = cropT > 0 || cropR > 0 || cropB > 0 || cropL > 0;
+
             // FIX: If crop is 0, explicitly remove clip-path to restore the hardware overlay!
-            if (cropT === 0 && cropR === 0 && cropB === 0 && cropL === 0) {
+            if (!hasCrop) {
                 videoPlayer.style.clipPath = 'none';
             } else {
                 videoPlayer.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
@@ -2556,9 +3173,7 @@
                 currentSubSelectValue = source;
                 updateSubtitleUI();
 
-                subToast.innerText = source.startsWith('vid') ? "Embedded subtitles loaded" : "Subtitles loaded";
-                subToast.classList.remove('hidden');
-                setTimeout(() => subToast.classList.add('hidden'), 2500);
+                showToast(source.startsWith('vid') ? "Embedded subtitles loaded" : "Subtitles loaded");
             };
             reader.readAsText(file);
         }
@@ -2588,7 +3203,10 @@
             const srtFile = newSrts[0] || null;
 
             if (videoFile) {
+                setWakeLock(false);
                 isAudioFile = (videoFile.type || '').startsWith('audio/') || AUDIO_EXT_RE.test(videoFile.name);
+                if (isAudioFile) exitPipIfActive();
+                updatePipAvailability();
                 crtToggle.disabled = isAudioFile;
                 sizeSlider.disabled = isAudioFile;
                 vidSizeGroup.classList.toggle('disabled-control', isAudioFile);
@@ -2616,6 +3234,8 @@
 
                 cropPopupOverlay.classList.remove('visible');
                 cropTop.value = 0; cropBottom.value = 0; cropLeft.value = 0; cropRight.value = 0;
+                isLinkedTB = true; linkTB.classList.add('active');
+                isLinkedLR = true; linkLR.classList.add('active');
                 applyVideoCrop();
 
                 customSubSelectOptions.innerHTML = '';
@@ -2862,12 +3482,17 @@
             const currentVol = parseFloat(volumeSlider.value);
             audioPlayer.volume = Math.min(1, currentVol);
             if (gainNode) gainNode.gain.value = currentVol;
+            videoPlayer.playbackRate = currentPlaybackRate;
+            audioPlayer.playbackRate = currentPlaybackRate;
             syncRangeFills();
 
             videoPlayer.removeAttribute('controls');
 
             const fileName = filenameDisplay.textContent;
             filenameDisplay.classList.add('ready');
+            updatePipAvailability();
+            updateMediaSessionMetadata(fileName);
+            updateMediaSessionPosition();
             const savedTime = localStorage.getItem('rapt_resume_' + fileName);
             const canResume = savedTime && parseFloat(savedTime) > 2 && parseFloat(savedTime) < videoPlayer.duration - 2;
 
@@ -2949,6 +3574,9 @@
         }
 
         videoPlayer.addEventListener('ended', () => {
+            setWakeLock(false);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            updateMediaSessionPosition();
             if (filenameDisplay.textContent) {
                 localStorage.removeItem('rapt_resume_' + filenameDisplay.textContent);
             }
@@ -2999,6 +3627,12 @@
             sizeSlider.disabled = true;
             vidSizeGroup.classList.add('disabled-control');
             btnCropToggle.disabled = true;
+            setWakeLock(false);
+            exitPipIfActive();
+            updatePipAvailability();
+            updateMediaSessionMetadata(null);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+            updateMediaSessionPosition();
             updateSubtitleUI();
 
             let errorMsg = 'Your browser cannot play this file. Try an MP4 or WebM, or download <a href="ms-windows-store://pdp/?ProductId=9p074tf9rtj2" style="color: #3b82f6; text-decoration: underline;" target="_blank">Rapt on Windows</a> for improved playback.';
@@ -3024,7 +3658,7 @@
                 ambientCanvas.style.webkitMaskImage = 'none';
                 ambientCanvas.style.maskImage = 'none';
             }
-            if (!isAmbientEnabled || !videoPlayer._hasStartedPlaying) {
+            if (!isAmbientEnabled || isPipActive || !videoPlayer._hasStartedPlaying) {
                 ambientCanvas.classList.add('hidden');
                 ambientCanvas.style.opacity = '';
             } else if (isAudioFile ? audioPlayer.readyState > 0 : videoPlayer.readyState > 0) {
@@ -3045,7 +3679,7 @@
             ambientStageCanvas.height = h;
             ambientStageCtx.imageSmoothingEnabled = true;
             ambientStageCtx.imageSmoothingQuality = 'low';
-            if (videoPlayer.paused && isAmbientEnabled) {
+            if (videoPlayer.paused && isAmbientEnabled && !isPipActive) {
                 isFirstFrame = true;
                 drawAmbientFrame();
             }
@@ -3291,7 +3925,7 @@
         }
 
         function drawAmbientLoop(timestamp) {
-            if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled) return;
+            if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled || isPipActive) return;
             ambientAnimId = requestAnimationFrame(drawAmbientLoop);
 
             const now = timestamp || performance.now();
@@ -3323,7 +3957,7 @@
 
         glowSlider.addEventListener('input', (e) => {
             localStorage.setItem('rapt_glowIntensity', e.target.value);
-            if (isAmbientEnabled) ambientCanvas.style.opacity = e.target.value / 100;
+            if (isAmbientEnabled && !isPipActive) ambientCanvas.style.opacity = e.target.value / 100;
         });
 
         bindWheelStep(glowSlider, { step: 5 });
@@ -3437,6 +4071,7 @@
             const showNav = playlistFiles.length > 1;
             btnPrev.style.display = showNav ? 'inline-flex' : 'none';
             btnNext.style.display = showNav ? 'inline-flex' : 'none';
+            updateMediaSessionTrackHandlers();
 
             if (skipSave) {
                 lastSavedPlaylistJson = JSON.stringify(playlistFiles.map(f => f.name));
@@ -3665,6 +4300,10 @@
                 audioPlayer.play().catch(() => { });
             }
 
+            setWakeLock(true);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            updateMediaSessionPosition();
+
             manageAmbientState();
             manageCrtState();
         });
@@ -3673,6 +4312,9 @@
             cancelAnimationFrame(visAnimId);
             audioPlayer.pause();
             setPlayPauseIcon(false);
+            setWakeLock(false);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            updateMediaSessionPosition();
         });
 
         // Sync video when hardware media keys toggle the audio track
@@ -3695,11 +4337,12 @@
         });
 
         videoPlayer.addEventListener('seeked', () => {
-            if (isAmbientEnabled) {
+            if (isAmbientEnabled && !isPipActive) {
                 isFirstFrame = true;
                 if (videoPlayer.paused) drawAmbientFrame();
             }
             applySubtitleSelection(currentSubSelectValue);
+            updateMediaSessionPosition();
         });
 
         playOverlay.addEventListener('click', () => {
@@ -3726,12 +4369,17 @@
         }
 
         document.addEventListener('click', (e) => {
+            if (suppressNextClick) {
+                suppressNextClick = false;
+                return;
+            }
             const path = e.composedPath();
             const isOverUi = path.includes(controlBar) || path.includes(bottomControlBar) ||
                 path.includes(playlistPanel) || path.includes(playlistHandle) ||
                 path.includes(infoPopupOverlay) || path.includes(infoLink) ||
                 path.includes(cropPopupOverlay) || path.includes(playOverlay) ||
-                path.includes(customSubContainer);
+                path.includes(customSubContainer) || path.includes(btnPip) ||
+                path.includes(contextMenu);
             if (isOverUi) return;
 
             const btnResume = document.getElementById('btnResumePlay');
@@ -3754,7 +4402,8 @@
             if (controlBar.contains(e.target) || bottomControlBar.contains(e.target) ||
                 playlistPanel.contains(e.target) || playlistHandle.contains(e.target) ||
                 cropPopupOverlay.contains(e.target) || infoPopupOverlay.contains(e.target) ||
-                infoLink.contains(e.target)) return;
+                infoLink.contains(e.target) || btnPip.contains(e.target) ||
+                contextMenu.contains(e.target)) return;
 
             const btnResume = document.getElementById('btnResumePlay');
             if (btnResume && playOverlay.classList.contains('visible')) return;
@@ -3782,8 +4431,50 @@
         btnNext.addEventListener('click', playNext);
 
         if ('mediaSession' in navigator) {
-            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-            navigator.mediaSession.setActionHandler('nexttrack', playNext);
+            setMediaActionHandler('play', () => {
+                const btnResume = document.getElementById('btnResumePlay');
+                if (btnResume && playOverlay.classList.contains('visible')) {
+                    btnResume.click();
+                } else if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0 && playlistFiles.length > 0) {
+                    playPlaylistItem(0);
+                } else if (videoPlayer.readyState > 0 || audioPlayer.readyState > 0) {
+                    playBoth();
+                    showIndicator(true);
+                }
+            });
+            setMediaActionHandler('pause', () => {
+                if (!videoPlayer.paused || !audioPlayer.paused) {
+                    pauseBoth();
+                    showIndicator(false);
+                }
+            });
+            setMediaActionHandler('seekbackward', (details) => {
+                if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+                    const offset = (details && details.seekOffset) || 5;
+                    const newTime = Math.max(0, videoPlayer.currentTime - offset);
+                    seekBoth(newTime);
+                    updateMediaSessionPosition();
+                }
+            });
+            setMediaActionHandler('seekforward', (details) => {
+                if (videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+                    const offset = (details && details.seekOffset) || 5;
+                    const newTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + offset);
+                    seekBoth(newTime);
+                    updateMediaSessionPosition();
+                }
+            });
+            setMediaActionHandler('seekto', (details) => {
+                if (details && typeof details.seekTime === 'number' && videoPlayer.readyState > 0 && isFinite(videoPlayer.duration)) {
+                    const newTime = Math.max(0, Math.min(videoPlayer.duration, details.seekTime));
+                    seekBoth(newTime);
+                    seekSlider.value = (newTime / videoPlayer.duration) * 100 || 0;
+                    syncRangeFills();
+                    timeDisplay.innerText = `${formatTime(newTime)} / ${formatTime(videoPlayer.duration)}`;
+                    updateMediaSessionPosition();
+                }
+            });
+            updateMediaSessionTrackHandlers();
         }
 
         btnPlayPause.addEventListener('click', () => {
@@ -3824,14 +4515,16 @@
             // Anti-Drift Engine
             if (!seekSlider.isDragging && !videoPlayer.paused && !audioPlayer.paused) {
                 const drift = videoPlayer.currentTime - audioPlayer.currentTime;
+                const baseRate = currentPlaybackRate;
                 if (Math.abs(drift) > 0.5) {
                     audioPlayer.currentTime = videoPlayer.currentTime;
-                } else if (drift > 0.15 && audioPlayer.playbackRate === 1.0) {
-                    audioPlayer.playbackRate = 1.03;
-                } else if (drift < -0.15 && audioPlayer.playbackRate === 1.0) {
-                    audioPlayer.playbackRate = 0.97;
-                } else if (Math.abs(drift) < 0.05 && audioPlayer.playbackRate !== 1.0) {
-                    audioPlayer.playbackRate = 1.0;
+                    if (audioPlayer.playbackRate !== baseRate) audioPlayer.playbackRate = baseRate;
+                } else if (drift > 0.15 && audioPlayer.playbackRate === baseRate) {
+                    audioPlayer.playbackRate = +(baseRate * 1.03).toFixed(3);
+                } else if (drift < -0.15 && audioPlayer.playbackRate === baseRate) {
+                    audioPlayer.playbackRate = +(baseRate * 0.97).toFixed(3);
+                } else if (Math.abs(drift) < 0.05 && audioPlayer.playbackRate !== baseRate) {
+                    audioPlayer.playbackRate = baseRate;
                 }
             }
         });
@@ -3947,7 +4640,7 @@
             ambientCanvas.style.webkitMaskComposite = '';
             ambientCanvas.style.maskComposite = '';
 
-            if (videoPlayer.paused && isAmbientEnabled && !isAudioFile) {
+            if (videoPlayer.paused && isAmbientEnabled && !isAudioFile && !isPipActive) {
                 isFirstFrame = true;
                 drawAmbientFrame();
             }
@@ -3984,6 +4677,7 @@
         }
 
         window.addEventListener('resize', () => {
+            closeContextMenu();
             resizeAmbientCanvas();
             resizeVisualizer();
             updateSliderMax();
@@ -4040,7 +4734,7 @@
 
         // Viewport scroll adjusts volume when not hovering top UI, playlist, or crop popup
         window.addEventListener('wheel', (e) => {
-            if (controlBar.contains(e.target) || playlistPanel.contains(e.target) || cropPopupOverlay.contains(e.target)) return;
+            if (controlBar.contains(e.target) || playlistPanel.contains(e.target) || cropPopupOverlay.contains(e.target) || btnPip.contains(e.target) || contextMenu.contains(e.target)) return;
 
             e.preventDefault();
             e.deltaY < 0 ? volumeSlider.stepUp(5) : volumeSlider.stepDown(5);
@@ -4050,7 +4744,7 @@
             setCursorHidden(false);
 
             clearTimeout(hideTimeout);
-            if (!bottomControlBar.contains(e.target) && !cropPopupOverlay.classList.contains('visible')) {
+            if (!bottomControlBar.contains(e.target) && !cropPopupOverlay.classList.contains('visible') && !contextMenu.classList.contains('open')) {
                 hideTimeout = setTimeout(() => {
                     bottomControlBar.classList.add('hidden');
                     setCursorHidden(true);
@@ -4061,6 +4755,11 @@
         btnFit.addEventListener('click', () => setFitToPage(!isFitToPageEnabled));
 
         document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && contextMenu.classList.contains('open')) {
+                e.preventDefault();
+                closeContextMenu();
+                return;
+            }
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
             const key = e.key.toLowerCase();
@@ -4118,6 +4817,8 @@
                 playPrev();
             } else if (key === 't') {
                 btnFit.click();
+            } else if (key === 'i') {
+                togglePip();
             }
         });
 
@@ -4135,14 +4836,19 @@
             const isOverControlBar = e && controlBar.contains(e.target);
             const isOverBottomBar = e && bottomControlBar.contains(e.target);
             const isOverPlaylist = e && (playlistPanel.contains(e.target) || playlistHandle.contains(e.target));
+            const isOverPip = e && btnPip.contains(e.target);
+
+            if (btnPip.classList.contains('available')) {
+                btnPip.classList.remove('hidden');
+            }
 
             if (!e) {
                 controlBar.classList.remove('hidden');
                 bottomControlBar.classList.remove('hidden');
-            } else if (isOverControlBar || (!isOverBottomBar && e.clientY < window.innerHeight * 0.35)) {
+            } else if (isOverControlBar || (!isOverBottomBar && !isOverPip && e.clientY < window.innerHeight * 0.35)) {
                 controlBar.classList.remove('hidden');
                 bottomControlBar.classList.add('hidden');
-            } else if (isOverBottomBar || (!isOverControlBar && e.clientY > window.innerHeight * 0.65)) {
+            } else if (isOverBottomBar || (!isOverControlBar && !isOverPip && e.clientY > window.innerHeight * 0.65)) {
                 bottomControlBar.classList.remove('hidden');
                 controlBar.classList.add('hidden');
             } else {
@@ -4150,12 +4856,13 @@
                 bottomControlBar.classList.add('hidden');
             }
 
-            if (!isOverControlBar && !isOverBottomBar && !isOverPlaylist && !cropPopupOverlay.classList.contains('visible')) {
+            if (!isOverControlBar && !isOverBottomBar && !isOverPlaylist && !isOverPip && !cropPopupOverlay.classList.contains('visible') && !contextMenu.classList.contains('open')) {
                 hideTimeout = setTimeout(() => {
                     if (videoPlayer.readyState === 0 && audioPlayer.readyState === 0) return;
-                    if (cropPopupOverlay.classList.contains('visible')) return;
+                    if (cropPopupOverlay.classList.contains('visible') || contextMenu.classList.contains('open')) return;
                     controlBar.classList.add('hidden');
                     bottomControlBar.classList.add('hidden');
+                    btnPip.classList.add('hidden');
                     if (!isCursorHidden) {
                         setCursorHidden(true);
                         postToHost({ type: 'HIDE_CURSOR' });
@@ -4219,6 +4926,7 @@
             if (isCursorHidden) return;
             controlBar.classList.add('hidden');
             bottomControlBar.classList.add('hidden');
+            btnPip.classList.add('hidden');
         });
 
         resetIdleTimer();
@@ -4229,12 +4937,19 @@
             const isOverVideo = e.target === videoPlayer;
             const isOverOverlay = playOverlay.contains(e.target);
             const isOverPlaylist = playlistPanel.contains(e.target) || playlistHandle.contains(e.target);
+            const isOverPip = btnPip.contains(e.target);
+            const isOverContextMenu = contextMenu.contains(e.target);
+
+            if (contextMenu.classList.contains('open') && !isOverContextMenu) {
+                closeContextMenu();
+                if (e.button === 0) suppressNextClick = true;
+            }
 
             if (playlistPanel.classList.contains('open') && !isOverPlaylist) {
                 playlistPanel.classList.remove('open');
             }
 
-            if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay && !isOverPlaylist) {
+            if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay && !isOverPlaylist && !isOverPip && !isOverContextMenu) {
                 controlBar.classList.add('hidden');
                 bottomControlBar.classList.add('hidden');
             }
@@ -4265,6 +4980,10 @@
                         document.body.classList.add('drag-over');
                     } else if (msg.type === 'DRAG_LEAVE') {
                         document.body.classList.remove('drag-over');
+                    } else if (msg.type === 'PIP_STATE') {
+                        applyNativePipState(!!msg.active);
+                    } else if (msg.type === 'SCREENSHOT_SAVED') {
+                        showToast('Screenshot saved');
                     } else if (msg.type === 'LOAD_SRT') {
                         const source = msg.isEmbedded ? 'vid_0' : 'file';
                         const blob = new Blob([msg.srtContent], { type: 'text/plain' });
@@ -4306,6 +5025,7 @@
                                     audioPlayer.src = currentAudioUrl;
                                     audioPlayer.addEventListener('loadedmetadata', function onAudioLoaded() {
                                         audioPlayer.removeEventListener('loadedmetadata', onAudioLoaded);
+                                        audioPlayer.playbackRate = currentPlaybackRate;
                                         seekBoth(currentTime);
 
                                         if (!wasPaused) {
@@ -4319,7 +5039,7 @@
                                 }));
                             });
                         } else {
-                            audioContainer.style.display = 'none';
+                            audioTrackContainer.style.display = 'none';
                         }
                     } else if (msg.type === 'RESTORE_PLAYLIST') {
                         playlistFiles = msg.items.map(name => ({
@@ -4368,6 +5088,107 @@
                     postToHost(`LOG:Bridge listener error: ${err?.stack || err}`);
                 }
             });
+
+            function formatTimestampForFilename(seconds) {
+                const total = Math.max(0, Math.floor(seconds || 0));
+                const h = Math.floor(total / 3600);
+                const m = Math.floor((total % 3600) / 60);
+                const s = total % 60;
+                const pad = (n) => String(n).padStart(2, '0');
+                return h > 0 ? `${pad(h)}-${pad(m)}-${pad(s)}` : `${pad(m)}-${pad(s)}`;
+            }
+
+            function captureVideoScreenshot() {
+                if (isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight) return;
+
+                const cropT = Math.max(0, Math.min(nativeHeight - 1, parseFloat(cropTop.value) || 0));
+                const cropB = Math.max(0, Math.min(nativeHeight - cropT - 1, parseFloat(cropBottom.value) || 0));
+                const cropL = Math.max(0, Math.min(nativeWidth - 1, parseFloat(cropLeft.value) || 0));
+                const cropR = Math.max(0, Math.min(nativeWidth - cropL - 1, parseFloat(cropRight.value) || 0));
+
+                const srcW = Math.max(1, Math.round(nativeWidth - cropL - cropR));
+                const srcH = Math.max(1, Math.round(nativeHeight - cropT - cropB));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = srcW;
+                canvas.height = srcH;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                try {
+                    ctx.drawImage(videoPlayer, cropL, cropT, srcW, srcH, 0, 0, srcW, srcH);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+
+                    const rawName = filenameDisplay.textContent || 'Rapt_Screenshot';
+                    const dotIdx = rawName.lastIndexOf('.');
+                    const baseName = dotIdx > 0 ? rawName.substring(0, dotIdx) : rawName;
+                    const suggestedName = `${baseName}_${formatTimestampForFilename(videoPlayer.currentTime)}`;
+
+                    postToHost({
+                        type: 'SAVE_SCREENSHOT',
+                        fileName: suggestedName,
+                        imageData: base64
+                    });
+                } catch (err) {
+                    postToHost(`LOG:Screenshot capture failed: ${err?.message || err}`);
+                    showToast('Screenshot failed');
+                }
+            }
+
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const hasMedia = videoPlayer.readyState > 0 || audioPlayer.readyState > 0;
+                if (!hasMedia || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' ||
+                    controlBar.contains(e.target) || bottomControlBar.contains(e.target) ||
+                    playlistPanel.contains(e.target) || playlistHandle.contains(e.target) ||
+                    cropPopupOverlay.contains(e.target) || infoPopupOverlay.contains(e.target) ||
+                    btnPip.contains(e.target)) {
+                    closeContextMenu();
+                    return;
+                }
+
+                clearTimeout(hideTimeout);
+                setCursorHidden(false);
+
+                ctxScreenshot.style.display = isAudioFile ? 'none' : '';
+                ctxScreenshot.disabled = isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight;
+
+                contextMenu.classList.add('open');
+                const menuW = contextMenu.offsetWidth;
+                const menuH = contextMenu.offsetHeight;
+                const left = Math.max(6, Math.min(e.clientX, window.innerWidth - menuW - 6));
+                const top = Math.max(6, Math.min(e.clientY, window.innerHeight - menuH - 6));
+                contextMenu.style.left = left + 'px';
+                contextMenu.style.top = top + 'px';
+            });
+
+            contextMenu.addEventListener('click', (e) => e.stopPropagation());
+            contextMenu.addEventListener('dblclick', (e) => e.stopPropagation());
+
+            ctxScreenshot.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeContextMenu();
+                captureVideoScreenshot();
+            });
+
+            ctxSpeedSlider.addEventListener('input', (e) => applyPlaybackRate(e.target.value));
+            ctxSpeedLabel.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                applyPlaybackRate(1.0);
+            });
+            bindWheelStep(ctxSpeedSlider, { stopProp: true, target: ctxSpeedGroup });
+
+            let isDraggingSpeed = false;
+            ctxSpeedSlider.addEventListener('mousedown', () => { isDraggingSpeed = true; });
+            window.addEventListener('mouseup', (e) => {
+                if (!isDraggingSpeed) return;
+                isDraggingSpeed = false;
+                if (!contextMenu.contains(e.target)) suppressNextClick = true;
+            });
+
+            window.addEventListener('blur', closeContextMenu);
+
             postToHost({ type: 'BRIDGE_READY' });
         }
     </script>
