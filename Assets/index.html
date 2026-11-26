@@ -1450,6 +1450,12 @@
             padding: 6px 10px;
             text-align: left;
             white-space: nowrap;
+            transition: filter 0.2s, background-color 0.2s, color 0.2s;
+        }
+
+        .context-menu-item.active {
+            background-color: var(--accent);
+            color: var(--surface);
         }
 
         .context-menu-speed {
@@ -1883,6 +1889,15 @@
             </label>
             <input type="range" id="ctxSpeedSlider" min="0.1" max="3" step="0.1" value="1">
         </div>
+        <button id="ctxBoostVoices" class="context-menu-item" role="menuitemcheckbox" aria-checked="false">
+            <span>Sound: Boost Voices</span>
+        </button>
+        <button id="ctxBoostAll" class="context-menu-item" role="menuitemcheckbox" aria-checked="false">
+            <span>Sound: Boost All</span>
+        </button>
+        <button id="ctxNightMode" class="context-menu-item" role="menuitemcheckbox" aria-checked="false">
+            <span>Sound: Night Mode</span>
+        </button>
     </div>
 
     <div id="updatePopup" class="update-popup">
@@ -2028,7 +2043,10 @@
             ctxSpeedGroup: document.getElementById('ctxSpeedGroup'),
             ctxSpeedLabel: document.getElementById('ctxSpeedLabel'),
             ctxSpeedValue: document.getElementById('ctxSpeedValue'),
-            ctxSpeedSlider: document.getElementById('ctxSpeedSlider')
+            ctxSpeedSlider: document.getElementById('ctxSpeedSlider'),
+            ctxBoostVoices: document.getElementById('ctxBoostVoices'),
+            ctxBoostAll: document.getElementById('ctxBoostAll'),
+            ctxNightMode: document.getElementById('ctxNightMode')
         };
 
         const {
@@ -2050,7 +2068,8 @@
             glowIntensityGroup, glowSlider, ambientCanvas, visualizerCanvas,
             playbackIndicator, indicatorPlay, indicatorPause,
             infoLink, infoPopupOverlay, closePopupBtn, tabInfo, tabControls, contentInfo, contentControls,
-            contextMenu, ctxScreenshot, ctxSpeedGroup, ctxSpeedLabel, ctxSpeedValue, ctxSpeedSlider
+            contextMenu, ctxScreenshot, ctxSpeedGroup, ctxSpeedLabel, ctxSpeedValue, ctxSpeedSlider,
+            ctxBoostVoices, ctxBoostAll, ctxNightMode
         } = DOM;
 
         if (isMobile) mobileNotice.classList.add('visible');
@@ -2088,8 +2107,13 @@
         let nativeHeight = 360;
         let currentFitScale = 1;
         let audioCtx;
+        let mediaSourceNode;
         let gainNode;
         let analyser;
+        let audioDspNodes = null;
+        let isVoiceBoostEnabled = false;
+        let isBoostAllEnabled = false;
+        let isNightModeEnabled = false;
         let dataArray;
         let visAnimId;
         let loopMode = 0; // 0: Off, 1: Loop Video, 2: Loop Playlist
@@ -2983,6 +3007,10 @@
                 glowSlider.value = savedGlow;
             }
 
+            setVoiceBoost(localStorage.getItem('rapt_voiceBoost') === 'true', false);
+            setBoostAll(localStorage.getItem('rapt_boostAll') === 'true', false);
+            setNightMode(localStorage.getItem('rapt_nightMode') === 'true', false);
+
             manageAmbientState();
             manageCrtState();
 
@@ -3480,8 +3508,12 @@
             updateVideoSize(clampedScale);
 
             const currentVol = parseFloat(volumeSlider.value);
-            audioPlayer.volume = Math.min(1, currentVol);
-            if (gainNode) gainNode.gain.value = currentVol;
+            if (gainNode) {
+                audioPlayer.volume = 1;
+                gainNode.gain.value = currentVol;
+            } else {
+                audioPlayer.volume = Math.min(1, currentVol);
+            }
             videoPlayer.playbackRate = currentPlaybackRate;
             audioPlayer.playbackRate = currentPlaybackRate;
             syncRangeFills();
@@ -3552,10 +3584,87 @@
             if (isAudioFile) manageAmbientState();
         });
 
+        function updateAudioGraph() {
+            if (!audioCtx || !mediaSourceNode || !gainNode || !audioDspNodes) return;
+
+            const {
+                voiceHighpass, voiceDeEss,
+                boostAllBassCut, boostAllMakeup,
+                nightHighpass1, nightBassTrim,
+                safetyLimiter
+            } = audioDspNodes;
+
+            try { mediaSourceNode.disconnect(); } catch { }
+            try { voiceDeEss.disconnect(); } catch { }
+            try { boostAllMakeup.disconnect(); } catch { }
+            try { nightBassTrim.disconnect(); } catch { }
+            try { safetyLimiter.disconnect(); } catch { }
+
+            let tail = mediaSourceNode;
+
+            if (isVoiceBoostEnabled) {
+                tail.connect(voiceHighpass);
+                tail = voiceDeEss;
+            }
+
+            if (isBoostAllEnabled) {
+                tail.connect(boostAllBassCut);
+                tail = boostAllMakeup;
+            }
+
+            if (isNightModeEnabled) {
+                tail.connect(nightHighpass1);
+                tail = nightBassTrim;
+            }
+
+            if (isVoiceBoostEnabled || isBoostAllEnabled) {
+                tail.connect(safetyLimiter);
+                tail = safetyLimiter;
+            }
+
+            tail.connect(gainNode);
+        }
+
+        function setVoiceBoost(enabled, persist = true) {
+            isVoiceBoostEnabled = !!enabled;
+            if (persist) localStorage.setItem('rapt_voiceBoost', isVoiceBoostEnabled);
+            ctxBoostVoices.classList.toggle('active', isVoiceBoostEnabled);
+            ctxBoostVoices.setAttribute('aria-checked', String(isVoiceBoostEnabled));
+            updateAudioGraph();
+        }
+
+        function setBoostAll(enabled, persist = true) {
+            isBoostAllEnabled = !!enabled;
+            if (isBoostAllEnabled && isNightModeEnabled) {
+                isNightModeEnabled = false;
+                if (persist) localStorage.setItem('rapt_nightMode', 'false');
+                ctxNightMode.classList.remove('active');
+                ctxNightMode.setAttribute('aria-checked', 'false');
+            }
+            if (persist) localStorage.setItem('rapt_boostAll', isBoostAllEnabled);
+            ctxBoostAll.classList.toggle('active', isBoostAllEnabled);
+            ctxBoostAll.setAttribute('aria-checked', String(isBoostAllEnabled));
+            updateAudioGraph();
+        }
+
+        function setNightMode(enabled, persist = true) {
+            isNightModeEnabled = !!enabled;
+            if (isNightModeEnabled && isBoostAllEnabled) {
+                isBoostAllEnabled = false;
+                if (persist) localStorage.setItem('rapt_boostAll', 'false');
+                ctxBoostAll.classList.remove('active');
+                ctxBoostAll.setAttribute('aria-checked', 'false');
+            }
+            if (persist) localStorage.setItem('rapt_nightMode', isNightModeEnabled);
+            ctxNightMode.classList.toggle('active', isNightModeEnabled);
+            ctxNightMode.setAttribute('aria-checked', String(isNightModeEnabled));
+            updateAudioGraph();
+        }
+
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioCtx.createMediaElementSource(audioPlayer);
+                mediaSourceNode = audioCtx.createMediaElementSource(audioPlayer);
                 gainNode = audioCtx.createGain();
                 analyser = audioCtx.createAnalyser();
                 // Quadruple frequency resolution (~5.3 Hz/bin) to give bass more dedicated bars
@@ -3564,11 +3673,92 @@
                 analyser.maxDecibels = -15;
                 analyser.smoothingTimeConstant = 0.93;
 
+                // Voice Boost DSP chain
+                const voiceHighpass = audioCtx.createBiquadFilter();
+                voiceHighpass.type = 'highpass';
+                voiceHighpass.frequency.value = 120;
+                voiceHighpass.Q.value = 0.7;
+
+                const voiceBody = audioCtx.createBiquadFilter();
+                voiceBody.type = 'peaking';
+                voiceBody.frequency.value = 1000;
+                voiceBody.Q.value = 1.0;
+                voiceBody.gain.value = 3.5;
+
+                const voicePresence = audioCtx.createBiquadFilter();
+                voicePresence.type = 'peaking';
+                voicePresence.frequency.value = 2500;
+                voicePresence.Q.value = 0.9;
+                voicePresence.gain.value = 7.0;
+
+                const voiceDeEss = audioCtx.createBiquadFilter();
+                voiceDeEss.type = 'highshelf';
+                voiceDeEss.frequency.value = 6500;
+                voiceDeEss.gain.value = -2.0;
+
+                voiceHighpass.connect(voiceBody);
+                voiceBody.connect(voicePresence);
+                voicePresence.connect(voiceDeEss);
+
+                // Boost All DSP chain (heavy compression + make-up gain)
+                const boostAllBassCut = audioCtx.createBiquadFilter();
+                boostAllBassCut.type = 'lowshelf';
+                boostAllBassCut.frequency.value = 150;
+                boostAllBassCut.gain.value = -6.0;
+
+                const boostAllCompressor = audioCtx.createDynamicsCompressor();
+                boostAllCompressor.threshold.value = -30;
+                boostAllCompressor.knee.value = 18;
+                boostAllCompressor.ratio.value = 8;
+                boostAllCompressor.attack.value = 0.005;
+                boostAllCompressor.release.value = 0.25;
+
+                const boostAllMakeup = audioCtx.createGain();
+                boostAllMakeup.gain.value = 1.8;
+
+                boostAllBassCut.connect(boostAllCompressor);
+                boostAllCompressor.connect(boostAllMakeup);
+
+                // Night Mode DSP chain (purely subtractive bass cut, zero compression/boost)
+                const nightHighpass1 = audioCtx.createBiquadFilter();
+                nightHighpass1.type = 'highpass';
+                nightHighpass1.frequency.value = 150;
+                nightHighpass1.Q.value = 0.707;
+
+                const nightHighpass2 = audioCtx.createBiquadFilter();
+                nightHighpass2.type = 'highpass';
+                nightHighpass2.frequency.value = 150;
+                nightHighpass2.Q.value = 0.707;
+
+                const nightBassTrim = audioCtx.createBiquadFilter();
+                nightBassTrim.type = 'lowshelf';
+                nightBassTrim.frequency.value = 300;
+                nightBassTrim.gain.value = -6.0;
+
+                nightHighpass1.connect(nightHighpass2);
+                nightHighpass2.connect(nightBassTrim);
+
+                // Peak safety limiter for active boost DSP modes
+                const safetyLimiter = audioCtx.createDynamicsCompressor();
+                safetyLimiter.threshold.value = -1.5;
+                safetyLimiter.knee.value = 6;
+                safetyLimiter.ratio.value = 16;
+                safetyLimiter.attack.value = 0.002;
+                safetyLimiter.release.value = 0.12;
+
+                audioDspNodes = {
+                    voiceHighpass, voiceBody, voicePresence, voiceDeEss,
+                    boostAllBassCut, boostAllCompressor, boostAllMakeup,
+                    nightHighpass1, nightHighpass2, nightBassTrim,
+                    safetyLimiter
+                };
+
+                audioPlayer.volume = 1;
                 gainNode.gain.value = parseFloat(volumeSlider.value);
 
-                source.connect(gainNode);
                 gainNode.connect(analyser);
                 analyser.connect(audioCtx.destination);
+                updateAudioGraph();
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
@@ -5089,108 +5279,138 @@
                 }
             });
 
-            function formatTimestampForFilename(seconds) {
-                const total = Math.max(0, Math.floor(seconds || 0));
-                const h = Math.floor(total / 3600);
-                const m = Math.floor((total % 3600) / 60);
-                const s = total % 60;
-                const pad = (n) => String(n).padStart(2, '0');
-                return h > 0 ? `${pad(h)}-${pad(m)}-${pad(s)}` : `${pad(m)}-${pad(s)}`;
-            }
-
-            function captureVideoScreenshot() {
-                if (isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight) return;
-
-                const cropT = Math.max(0, Math.min(nativeHeight - 1, parseFloat(cropTop.value) || 0));
-                const cropB = Math.max(0, Math.min(nativeHeight - cropT - 1, parseFloat(cropBottom.value) || 0));
-                const cropL = Math.max(0, Math.min(nativeWidth - 1, parseFloat(cropLeft.value) || 0));
-                const cropR = Math.max(0, Math.min(nativeWidth - cropL - 1, parseFloat(cropRight.value) || 0));
-
-                const srcW = Math.max(1, Math.round(nativeWidth - cropL - cropR));
-                const srcH = Math.max(1, Math.round(nativeHeight - cropT - cropB));
-
-                const canvas = document.createElement('canvas');
-                canvas.width = srcW;
-                canvas.height = srcH;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-
-                try {
-                    ctx.drawImage(videoPlayer, cropL, cropT, srcW, srcH, 0, 0, srcW, srcH);
-                    const dataUrl = canvas.toDataURL('image/png');
-                    const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
-
-                    const rawName = filenameDisplay.textContent || 'Rapt_Screenshot';
-                    const dotIdx = rawName.lastIndexOf('.');
-                    const baseName = dotIdx > 0 ? rawName.substring(0, dotIdx) : rawName;
-                    const suggestedName = `${baseName}_${formatTimestampForFilename(videoPlayer.currentTime)}`;
-
-                    postToHost({
-                        type: 'SAVE_SCREENSHOT',
-                        fileName: suggestedName,
-                        imageData: base64
-                    });
-                } catch (err) {
-                    postToHost(`LOG:Screenshot capture failed: ${err?.message || err}`);
-                    showToast('Screenshot failed');
-                }
-            }
-
-            document.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                const hasMedia = videoPlayer.readyState > 0 || audioPlayer.readyState > 0;
-                if (!hasMedia || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' ||
-                    controlBar.contains(e.target) || bottomControlBar.contains(e.target) ||
-                    playlistPanel.contains(e.target) || playlistHandle.contains(e.target) ||
-                    cropPopupOverlay.contains(e.target) || infoPopupOverlay.contains(e.target) ||
-                    btnPip.contains(e.target)) {
-                    closeContextMenu();
-                    return;
-                }
-
-                clearTimeout(hideTimeout);
-                setCursorHidden(false);
-
-                ctxScreenshot.style.display = isAudioFile ? 'none' : '';
-                ctxScreenshot.disabled = isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight;
-
-                contextMenu.classList.add('open');
-                const menuW = contextMenu.offsetWidth;
-                const menuH = contextMenu.offsetHeight;
-                const left = Math.max(6, Math.min(e.clientX, window.innerWidth - menuW - 6));
-                const top = Math.max(6, Math.min(e.clientY, window.innerHeight - menuH - 6));
-                contextMenu.style.left = left + 'px';
-                contextMenu.style.top = top + 'px';
-            });
-
-            contextMenu.addEventListener('click', (e) => e.stopPropagation());
-            contextMenu.addEventListener('dblclick', (e) => e.stopPropagation());
-
-            ctxScreenshot.addEventListener('click', (e) => {
-                e.stopPropagation();
-                closeContextMenu();
-                captureVideoScreenshot();
-            });
-
-            ctxSpeedSlider.addEventListener('input', (e) => applyPlaybackRate(e.target.value));
-            ctxSpeedLabel.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                applyPlaybackRate(1.0);
-            });
-            bindWheelStep(ctxSpeedSlider, { stopProp: true, target: ctxSpeedGroup });
-
-            let isDraggingSpeed = false;
-            ctxSpeedSlider.addEventListener('mousedown', () => { isDraggingSpeed = true; });
-            window.addEventListener('mouseup', (e) => {
-                if (!isDraggingSpeed) return;
-                isDraggingSpeed = false;
-                if (!contextMenu.contains(e.target)) suppressNextClick = true;
-            });
-
-            window.addEventListener('blur', closeContextMenu);
-
             postToHost({ type: 'BRIDGE_READY' });
         }
+
+        // === 11. CONTEXT MENU, SCREENSHOT & AUDIO MODES ===
+        function formatTimestampForFilename(seconds) {
+            const total = Math.max(0, Math.floor(seconds || 0));
+            const h = Math.floor(total / 3600);
+            const m = Math.floor((total % 3600) / 60);
+            const s = total % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            return h > 0 ? `${pad(h)}-${pad(m)}-${pad(s)}` : `${pad(m)}-${pad(s)}`;
+        }
+
+        function captureVideoScreenshot() {
+            if (isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight) return;
+
+            const cropT = Math.max(0, Math.min(nativeHeight - 1, parseFloat(cropTop.value) || 0));
+            const cropB = Math.max(0, Math.min(nativeHeight - cropT - 1, parseFloat(cropBottom.value) || 0));
+            const cropL = Math.max(0, Math.min(nativeWidth - 1, parseFloat(cropLeft.value) || 0));
+            const cropR = Math.max(0, Math.min(nativeWidth - cropL - 1, parseFloat(cropRight.value) || 0));
+
+            const srcW = Math.max(1, Math.round(nativeWidth - cropL - cropR));
+            const srcH = Math.max(1, Math.round(nativeHeight - cropT - cropB));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = srcW;
+            canvas.height = srcH;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            try {
+                ctx.drawImage(videoPlayer, cropL, cropT, srcW, srcH, 0, 0, srcW, srcH);
+                const dataUrl = canvas.toDataURL('image/png');
+                const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+
+                const rawName = filenameDisplay.textContent || 'Rapt_Screenshot';
+                const dotIdx = rawName.lastIndexOf('.');
+                const baseName = dotIdx > 0 ? rawName.substring(0, dotIdx) : rawName;
+                const suggestedName = `${baseName}_${formatTimestampForFilename(videoPlayer.currentTime)}`;
+
+                if (!postToHost({
+                    type: 'SAVE_SCREENSHOT',
+                    fileName: suggestedName,
+                    imageData: base64
+                })) {
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = `${suggestedName}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    showToast('Screenshot saved');
+                }
+            } catch (err) {
+                postToHost(`LOG:Screenshot capture failed: ${err?.message || err}`);
+                showToast('Screenshot failed');
+            }
+        }
+
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const hasMedia = videoPlayer.readyState > 0 || audioPlayer.readyState > 0;
+            if (!hasMedia || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' ||
+                controlBar.contains(e.target) || bottomControlBar.contains(e.target) ||
+                playlistPanel.contains(e.target) || playlistHandle.contains(e.target) ||
+                cropPopupOverlay.contains(e.target) || infoPopupOverlay.contains(e.target) ||
+                btnPip.contains(e.target)) {
+                closeContextMenu();
+                return;
+            }
+
+            clearTimeout(hideTimeout);
+            setCursorHidden(false);
+
+            ctxScreenshot.style.display = isAudioFile ? 'none' : '';
+            ctxScreenshot.disabled = isAudioFile || videoPlayer.readyState < 2 || !nativeWidth || !nativeHeight;
+
+            contextMenu.classList.add('open');
+            const menuW = contextMenu.offsetWidth;
+            const menuH = contextMenu.offsetHeight;
+            const left = Math.max(6, Math.min(e.clientX, window.innerWidth - menuW - 6));
+            const top = Math.max(6, Math.min(e.clientY, window.innerHeight - menuH - 6));
+            contextMenu.style.left = left + 'px';
+            contextMenu.style.top = top + 'px';
+        });
+
+        contextMenu.addEventListener('click', (e) => e.stopPropagation());
+        contextMenu.addEventListener('dblclick', (e) => e.stopPropagation());
+
+        ctxScreenshot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeContextMenu();
+            captureVideoScreenshot();
+        });
+
+        ctxSpeedSlider.addEventListener('input', (e) => applyPlaybackRate(e.target.value));
+        ctxSpeedLabel.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            applyPlaybackRate(1.0);
+        });
+        bindWheelStep(ctxSpeedSlider, { stopProp: true, target: ctxSpeedGroup });
+
+        ctxBoostVoices.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!audioCtx && (videoPlayer.readyState > 0 || audioPlayer.readyState > 0)) initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => { });
+            setVoiceBoost(!isVoiceBoostEnabled);
+        });
+
+        ctxBoostAll.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!audioCtx && (videoPlayer.readyState > 0 || audioPlayer.readyState > 0)) initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => { });
+            setBoostAll(!isBoostAllEnabled);
+        });
+
+        ctxNightMode.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!audioCtx && (videoPlayer.readyState > 0 || audioPlayer.readyState > 0)) initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => { });
+            setNightMode(!isNightModeEnabled);
+        });
+
+        let isDraggingSpeed = false;
+        ctxSpeedSlider.addEventListener('mousedown', () => { isDraggingSpeed = true; });
+        window.addEventListener('mouseup', (e) => {
+            if (!isDraggingSpeed) return;
+            isDraggingSpeed = false;
+            if (!contextMenu.contains(e.target)) suppressNextClick = true;
+        });
+
+        window.addEventListener('blur', closeContextMenu);
     </script>
 
 </body>
