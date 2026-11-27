@@ -81,36 +81,52 @@
         .bottom-controls {
             position: fixed;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, 0);
             background-color: var(--panel-bg);
             border: 1px solid var(--border-dark);
             padding: 15px 25px;
-            border-radius: 10px;
             display: flex;
             gap: 15px;
             align-items: center;
             justify-content: center;
             z-index: 100;
             box-shadow: var(--shadow);
-            transition: opacity 0.4s ease, visibility 0.4s ease;
+            transition: transform 0.3s ease, visibility 0s linear 0s;
         }
 
         .controls {
-            top: 20px;
+            top: 0;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
             flex-direction: column;
         }
 
         .bottom-controls {
-            bottom: 30px;
+            bottom: 0;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0px -4px 12px rgba(0, 0, 0, 0.5);
             width: 60%;
             max-width: 850px;
         }
 
         .controls.hidden,
         .bottom-controls.hidden {
-            opacity: 0;
             pointer-events: none;
             visibility: hidden;
+            transition: transform 0.3s ease, visibility 0s linear 0.3s;
+        }
+
+        .controls.hidden {
+            transform: translate(-50%, calc(-100% - 20px));
+        }
+
+        .bottom-controls.hidden {
+            transform: translate(-50%, calc(100% + 20px));
+        }
+
+        body:not(.mini-player) .bottom-controls.hidden:has(#filenameDisplay.ready:not(:empty)) {
+            transform: translate(-50%, calc(100% + 65px));
         }
 
         #filenameDisplay {
@@ -659,7 +675,7 @@
         }
 
         body.mini-player .bottom-controls {
-            bottom: 10px;
+            bottom: 0;
             width: calc(100% - 20px);
             max-width: none;
             padding: 8px 12px;
@@ -1423,6 +1439,18 @@
             text-align: right;
         }
 
+        .controls-note {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--surface);
+            font-size: 13.5px;
+        }
+
+        .controls-note span {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
         .context-menu {
             position: fixed;
             display: none;
@@ -1743,7 +1771,7 @@
 
     <div id="customSubContainer" class="draggable-sub"></div>
 
-    <a id="infoLink" href="#">Rapt Info</a>
+    <a id="infoLink" href="#">Controls &amp; Info</a>
 
     <div id="cropPopupOverlay" class="info-popup-overlay">
         <div class="info-popup">
@@ -1806,11 +1834,11 @@
             <div id="closePopupBtn" class="close-popup-btn" title="Close">&#10006;</div>
 
             <div class="popup-tabs">
-                <div id="tabInfo" class="popup-tab active">Info</div>
-                <div id="tabControls" class="popup-tab">Controls</div>
+                <div id="tabControls" class="popup-tab active">Controls</div>
+                <div id="tabInfo" class="popup-tab">Info</div>
             </div>
 
-            <div id="contentInfo" class="tab-content active">
+            <div id="contentInfo" class="tab-content">
                 <h2>Rapt 1.5.0</h2>
                 <p class="github-link">
                     <a href="https://github.com/crustyoldhuman/Rapt"
@@ -1835,7 +1863,7 @@
                 </p>
             </div>
 
-            <div id="contentControls" class="tab-content">
+            <div id="contentControls" class="tab-content active">
                 <div class="controls-list">
                     <span>Space / K</span>
                     <div>Play / Pause</div>
@@ -1872,6 +1900,7 @@
                     <span>I</span>
                     <div>Always on Top / PiP</div>
                 </div>
+                <div class="controls-note"><span>Right-Click on Playback Controls:</span> Screenshot, Playback Speed, &amp; Sound Modes</div>
             </div>
         </div>
     </div>
@@ -2872,6 +2901,7 @@
                 cropHoldTriggered = true;
                 cropPointerActive = false;
                 clearTimeout(hideTimeout);
+                infoPopupOverlay.classList.remove('visible');
                 cropPopupOverlay.classList.add('visible');
                 btnCropToggle.blur();
             }, CROP_HOLD_MS);
@@ -5063,6 +5093,7 @@
 
         infoLink.addEventListener('click', (e) => {
             e.preventDefault();
+            cropPopupOverlay.classList.remove('visible');
             infoPopupOverlay.classList.add('visible');
         });
         closePopupBtn.addEventListener('click', () => infoPopupOverlay.classList.remove('visible'));
