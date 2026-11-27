@@ -7,7 +7,7 @@
 -->
 Rapt is a native Windows desktop application ***or*** standalone HTML5 video player for PC designed for an immersive dark room playback experience and to apply super resolution upscaling (like NVIDIA RTX Video Super Resolution or AMD RSR) to your local media files with zero configuration, all while remaining entirely local and privacy-respecting.
 
-<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/ffd924bf-b8eb-45c8-a164-af7f5197df1f" /></p>
+<p align="center"><img width="800" alt="EmptyPlayerPromo" src="https://github.com/user-attachments/assets/dc37a3f0-b74c-4e27-a5a2-cda7c2837689" /></p>
 
 ***Note:*** *Rapt is not intended for mobile devices.*
 
@@ -36,12 +36,12 @@ Rapt is a brutalist and clean viewing experience for your local media. Just load
 - **Video Scaling:** Because low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
 
 - **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
-<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/d6fae595-6160-4b57-a9cf-9b32988bf515" /></p>
+<p align="center"><img width="600" alt="GlowPromo" src="https://github.com/user-attachments/assets/302f2989-b9f4-40a9-9683-d16a373d4d34" /></p>
  
 - **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and upscalers waste resources trying to process encoded black letterbox bars. Rapt lets you crop the edges in real-time to fix both of these problems.
 
 - **CRT Filter:** Crank up the nostalgia by enabling the CRT filter on old videos--looks great on old cartoons
-<p align="center"><img width="600" alt="CRTPromo" src="https://github.com/user-attachments/assets/d2717322-d2dc-42bf-aa03-59656d5649a4" /></p>
+<p align="center"><img width="600" alt="CRTPromo" src="https://github.com/user-attachments/assets/eff6e44d-fa6a-4b1c-a9e9-3cdd4daa09cc" /></p>
   
 - **Playlist Manager:** Load multiple videos and save/load your playlists for continuous playback. Drag-and-drop your media to re-sort your list. Saving/loading is only supported on Windows app. 
 
@@ -53,7 +53,7 @@ Rapt is a brutalist and clean viewing experience for your local media. Just load
 
 - **Responsive Default Audio Visualizer:** See your audio dance and react in a gorgeous, smooth spectrum visualizer whenever audio is played. Bonus: Supports the "Glow" feature for an even more dynamic effect.
 
-<p align="center"><img width="600" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/0137c2ed-57fb-4a57-ae82-badcc29b5d44" /></p>
+<p align="center"><img width="600" alt="VisualizerPromo" src="https://github.com/user-attachments/assets/4d7be3ad-caf8-4d67-a0f6-8d4c4c5c67f6" /></p>
 
 - **Advanced Subtitle Engine:**
 
